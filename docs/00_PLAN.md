@@ -29,7 +29,7 @@ License: Apache-2.0 (weights + code). All training data permissively licensed.
 
 ## RAM-footprint strategy
 1. **Architecture win (free):** Qwen3.5 is hybrid — only 8/32 layers are full attention (4 KV heads × 256 dim). KV cache ≈ 32 KiB/token in fp16 → 128K context ≈ 4 GiB fp16 / **2 GiB q8_0**. Qwen2.5-7B (V4) needs ~56 KiB/token (7 GiB at 128K).
-2. **Text-only release:** drop the ~0.45B-param vision tower (no `mmproj` needed) — coding model doesn't need it.
+2. **Vision kept (decided 2026-11-03):** the vision tower is untouched by training and stays in the HF weights; GGUF ships an optional `mmproj` file so text-only users pay no RAM for it.
 3. **imatrix quant ladder** calibrated on Threnody's own agentic traces: Q8_0, Q6_K, Q5_K_M, Q4_K_M, IQ4_XS, IQ3_M (labelled degraded).
 4. **Recommended runtime flags:** `-fa on -ctk q8_0 -ctv q8_0` (+0.0008 KLD).
 5. **Speed:** MTP head kept in HF weights for vLLM/SGLang speculative decoding.
@@ -66,4 +66,5 @@ Progress log: `docs/PROGRESS.md`.
 4. **imatrix quant ladder + KLD** on Threnody's own agentic traces (`pipeline/export_gguf.py`). ~30-45 min.
 5. **DPO on existing teacher pairs** (if credits allow): chosen = 71 verified-passing trajectories, rejected = 105 passed-but-unverified + 42 failed. Teaches "run the tests before finishing". ~30-60 min training + bench.
 6. **MTP speculative decoding**: enable the kept MTP head in vLLM/SGLang, measure tokens/s and confirm identical outputs; document flags in the README.
+7. **Vision tower re-added to GGUF**: `convert_hf_to_gguf.py --mmproj` on the chosen merge -> `mmproj-Threnody-9B-*.gguf` (optional download); quick image sanity eval (screenshots/diagrams/error dialogs) base vs Threnody, since the LM was tuned text-only. ~20 min.
 Rule for every step: the chosen model must not regress vs base on either suite. On-policy distillation from Qwen3.8-27B remains the larger step after this.
