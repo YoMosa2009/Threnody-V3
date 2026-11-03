@@ -13,7 +13,7 @@ os.makedirs(DRIVE, exist_ok=True)"""),
 ("code", """# 2. Code + Python deps
 !rm -rf /content/Threnody && git clone -q https://github.com/YoMosa2009/Threnody /content/Threnody
 !test -d /content/OmniAgent-Bench || git clone -q https://github.com/YoMosa2009/OmniAgent-Bench /content/OmniAgent-Bench
-!pip -q install -U "transformers>=4.57" "peft>=0.17" "datasets>=3" accelerate flash-linear-attention hf_transfer
+!pip -q install -U "transformers>=4.57" "peft>=0.17" "datasets>=3" accelerate flash-linear-attention && pip -q uninstall -y torchao
 os.environ['HF_HUB_ENABLE_HF_TRANSFER'] = '1'
 import transformers, peft, torch; print(transformers.__version__, peft.__version__, torch.__version__)"""),
 ("code", """# 3. llama.cpp (CUDA) — built once, cached in Drive

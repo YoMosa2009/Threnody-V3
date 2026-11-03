@@ -24,3 +24,10 @@
 - V4 reproduces its published 72.69% exactly → harness is faithful. On identical hardware V4 is now *below* its own base (73.03%).
 - Qwen3.5-9B already +20 pts over V4 before training. Only CODE-05 (email regex) and SEC-01 partial credit remain → **OmniAgent-Bench is saturated** for this model class. It can show regressions, not improvements.
 - Decision: add a harder closed-loop multi-turn agentic eval (`eval/agentloop`) — sandboxed repos, native tools, hidden pytest grading.
+
+### Course correction (user directive): teachers must be June-2026+ models
+- Rejected: datasets whose trajectories come from 2025-era teachers (e.g. SWE-smith trajectories = Claude 3.7 Sonnet). Full SFT is on hold until the mix is rebuilt.
+- New direction: (1) audit every source's teacher/date; (2) generate our own verified agent trajectories with a 2026 open-weight teacher (leading candidate `Qwen/Qwen3.8-27B`, 2026-08-14, Apache-2.0, same tokenizer family) on the A100; (3) on-policy distillation from that teacher; (4) refresh techniques from 2026 papers.
+- Closed-model outputs (Claude/GPT) are excluded: their terms forbid training competing models on outputs.
+- Pilot still runs (validates trainer + measures throughput/memory; data-independent).
+- Research round 2 launched → `research_notes/Threnody 2026 frontier techniques/`.

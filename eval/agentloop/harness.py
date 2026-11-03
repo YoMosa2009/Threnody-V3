@@ -86,17 +86,18 @@ def chat(base_url, messages, think, max_tokens):
         return json.load(r)["choices"][0]
 
 
-def run_task(a, task):
+def run_task(a, task, system=None, chat_fn=None):
+    chat_fn = chat_fn or chat
     root = tempfile.mkdtemp(prefix=f"agent_{task['id']}_")
     for rel, content in task["files"].items():
         p = os.path.join(root, rel)
         os.makedirs(os.path.dirname(p), exist_ok=True)
         open(p, "w", encoding="utf-8", newline="\n").write(content)
-    messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": task["instruction"]}]
+    messages = [{"role": "system", "content": system or SYSTEM}, {"role": "user", "content": task["instruction"]}]
     t0, turns, tool_calls, error = time.time(), 0, 0, None
     try:
         for turns in range(1, a.max_turns + 1):
-            choice = chat(a.base_url, messages, a.think, a.max_tokens)
+            choice = chat_fn(a.base_url, messages, a.think, a.max_tokens)
             msg = choice["message"]
             calls = msg.get("tool_calls") or []
             out = {"role": "assistant", "content": msg.get("content") or ""}

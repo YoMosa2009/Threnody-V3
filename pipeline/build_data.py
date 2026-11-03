@@ -318,6 +318,76 @@ def src_security_instruct():
                             {"role": "assistant", "content": row["assistant"]}], "tools": None}
 
 
+# ---------------------------------------------------------------- v2: June-2026+ teachers only
+OST = "hf://datasets/nvidia/Open-SWE-Traces/data/{harness}/qwen38_27b/*/*.parquet"
+
+
+def _ost(harness):
+    """nvidia/Open-SWE-Traces, Qwen3.8-27B teacher (2026-08), resolved trajectories only."""
+    ds = load_dataset("parquet", data_files=OST.format(harness=harness), split="train", streaming=True)
+    for row in ds.shuffle(seed=7, buffer_size=500):
+        if not row.get("resolved"):
+            continue
+        teacher = ((row.get("metadata") or {}).get("teacher_model") or {}).get("name", "")
+        if "3.8-27B" not in teacher:
+            continue
+        raw = row["trajectory"] if "trajectory" in row else row["messages"]
+        raw = json.loads(raw) if isinstance(raw, str) else raw
+        msgs = []
+        for m in raw:
+            msg = {"role": m["role"], "content": m.get("content") or ""}
+            if m["role"] == "assistant":
+                if m.get("reasoning_content"):
+                    msg["reasoning_content"] = m["reasoning_content"]
+                if m.get("tool_calls"):
+                    msg["tool_calls"] = [_call(tc["function"]["name"], tc["function"]["arguments"]) for tc in m["tool_calls"]]
+            msgs.append(msg)
+        if msgs and msgs[-1]["role"] == "assistant":
+            yield {"messages": msgs, "tools": [_tool(t) for t in (row.get("tools") or [])] or None,
+                   "meta": {"lang": row.get("language"), "repo": row.get("repo")}}
+
+
+def src_ost_claudecode():
+    yield from _ost("claudecode")
+
+
+def src_ost_opencode():
+    yield from _ost("opencode")
+
+
+def src_ost_minisweagent():
+    yield from _ost("minisweagent")
+
+
+def src_ost_openhands():
+    yield from _ost("openhands")
+
+
+def src_ost_sweagent():
+    yield from _ost("sweagent")
+
+
+def src_qwen38_terminus():
+    """ukisai/Qwen3.8-27B-multi-turn-agent-sft: Terminus-2 terminal traces, Qwen3.8-27B, 2026-08."""
+    f = "hf://datasets/ukisai/Qwen3.8-27B-multi-turn-agent-sft/qwen38-agent-sft-combined-100pct.parquet"
+    for row in _stream("parquet", data_files=f, split="train"):
+        if "3.8-27b" not in (row.get("model") or "").lower():
+            continue
+        msgs = [{"role": c["role"], "content": c["content"]} for c in row["conversations"]]
+        if msgs and msgs[-1]["role"] == "assistant":
+            yield {"messages": msgs, "tools": None}
+
+
+MIX_V2 = [
+    ("ost_claudecode", 1200),
+    ("ost_opencode", 1200),
+    ("ost_minisweagent", 1000),
+    ("ost_openhands", 800),
+    ("ost_sweagent", 800),
+    ("qwen38_terminus", 900),
+]
+
+
 # ---------------------------------------------------------------- driver
 def render_len(tok, rec):
     text = tok.apply_chat_template(rec["messages"], tools=rec["tools"] or None, tokenize=False)
@@ -330,6 +400,9 @@ def main():
     ap.add_argument("--scale", type=float, default=1.0)
     ap.add_argument("--tasks", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "omniagent_tasks.json"))
     ap.add_argument("--only", default="", help="comma-separated source names")
+    ap.add_argument("--mix", default="v2", choices=["v1", "v2"])
+    ap.add_argument("--max_tokens", type=int, default=MAX_TOKENS)
+    ap.add_argument("--no_identity", action="store_true")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
@@ -338,7 +411,7 @@ def main():
     only = set(filter(None, args.only.split(",")))
     stats, all_recs = {}, []
 
-    for name, target in MIX:
+    for name, target in (MIX_V2 if args.mix == "v2" else MIX):
         if only and name not in only:
             continue
         n_target = max(1, int(round(target * args.scale)))
@@ -359,7 +432,7 @@ def main():
                 if errors <= 3:
                     print(f"  [{name}] render error: {e}", flush=True)
                 continue
-            if n > MAX_TOKENS:
+            if n > args.max_tokens:
                 too_long += 1
                 continue
             rec["source"] = name
@@ -372,7 +445,7 @@ def main():
                            errors=errors, tokens=tok_total, avg_tokens=tok_total // max(kept, 1))
         print(f"{name:22s} {stats[name]}", flush=True)
 
-    if not only or "identity" in only:
+    if not args.no_identity and (not only or "identity" in only):
         ids = identity_records(int(round(80 * max(args.scale, 0.05))))
         for r in ids:
             stats.setdefault("identity", {"kept": 0, "tokens": 0})
