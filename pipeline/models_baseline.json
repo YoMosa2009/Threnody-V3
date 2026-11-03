@@ -1,0 +1,5 @@
+[
+  {"id": "qwen25-coder-7b", "name": "Qwen2.5-Coder-7B-Instruct (V4 base)", "path": "/content/models/qwen2.5-coder-7b-instruct-q4_k_m.gguf", "modes": ["default"]},
+  {"id": "fable-v4", "name": "Fable-Coder V4", "path": "/content/models/fable-coder-v4-7b.Q4_K_M.gguf", "modes": ["default"]},
+  {"id": "qwen35-9b", "name": "Qwen3.5-9B (Threnody base)", "path": "/content/models/Qwen3.5-9B-Q4_K_M.gguf", "modes": ["nothink", "think"]}
+]
