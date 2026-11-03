@@ -2,6 +2,14 @@
 
 _Last updated: 2026-11-03 (UTC)_
 
+## Session 1 outcome (2026-11-03 05:21 UTC)
+- Teacher stage was SKIPPED: Colab's Python lacks `ensurepip`, so `python -m venv` failed and vLLM never installed
+  (fixed in repo: now uses `virtualenv`). `markers/teacher_failed` exists; `teacher_all.done` does not.
+- The pipeline fell back as designed and is running data_v2 -> SFT -> eval on the public June-2026+ data only
+  (Open-SWE-Traces Qwen3.8-27B + Qwen3.8 terminal traces).
+- Next session: `git pull` in Colab, delete markers/teacher_failed, data_v2.done, sft.done, eval.done, then re-run
+  the RUN-ALL cell. Teacher stages run, then SFT retrains with teacher data (or continue from sft_v2 + on-policy distillation).
+
 ## Running now (Colab A100-80GB, unattended)
 `pipeline/run_all.sh`, launched from the notebook, logs to `MyDrive/Threnody/logs/`. Each stage writes
 `MyDrive/Threnody/markers/<stage>.done` and is skipped on re-run, so to resume after a disconnect just

@@ -14,7 +14,7 @@ mark() { touch "$M/$1.done"; echo "=== $(date -u +%H:%M) done $1"; }
 # ---- 1. teacher server (Qwen3.8-27B-FP8, separate venv so Colab torch stays intact)
 if [ ! -f "$M/teacher_all.done" ]; then
   if [ ! -x /content/vllm-env/bin/vllm ]; then
-    { python -m venv /content/vllm-env && /content/vllm-env/bin/pip install -U pip &&       /content/vllm-env/bin/pip install "vllm==0.32.0" || /content/vllm-env/bin/pip install vllm; } > "$L/vllm_install.log" 2>&1
+    { pip -q install virtualenv && python -m virtualenv /content/vllm-env && /content/vllm-env/bin/pip install -U pip &&       /content/vllm-env/bin/pip install "vllm==0.32.0" || /content/vllm-env/bin/pip install vllm; } > "$L/vllm_install.log" 2>&1
   fi
   if [ ! -x /content/vllm-env/bin/vllm ]; then
     echo "!!! vllm install failed (see vllm_install.log); skipping teacher stages"; touch "$M/teacher_failed"
