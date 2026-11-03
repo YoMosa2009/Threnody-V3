@@ -1,8 +1,11 @@
 # Threnody — Current Status & Handoff
 
-_Last updated: 2026-11-03 (UTC)_
+_Last updated: 2026-11-03 19:16 (UTC)_
 
-## HANDOFF: continue on another computer with docs/HANDOFF_PROMPT.md (training not started; runtime released 18:25 UTC)
+## Session 4 (19:06 UTC): SFT RUNNING on G4, launched from the user's Chrome
+- Colab account = project account, opened with `?authuser=1` (Chrome's default account is a different one with an empty Drive).
+- SFT started 19:08; verified stepping at 19:15 (step 2/232, 64 GB, 97% util). ETA ~5 h -> merge + bench follow automatically.
+- Keep the Chrome tab open. Watch `heartbeat.txt` / `ALERT.txt`; LOG TAIL cell for sft progress.
 
 ## Session 3 (15:50 UTC): teacher data done, SFT relaunching on G4 (RTX PRO 6000 96 GB)
 - SFT crash (fp32 vs bf16 in chunked CE) fixed; runtime was reclaimed; A100 unavailable so moved to G4. data_final = 3,707 records, 52.4M tokens.
