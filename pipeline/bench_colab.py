@@ -36,7 +36,7 @@ def wait_ready(port, proc, timeout=600):
 def run_one(a, m, mode):
     port = 8090
     tag = f"{m['id']}__{mode}"
-    cmd = [os.path.join(a.llama, "llama-server"), "-m", m["path"], "-ngl", "99", "-c", "32768", "-np", "1",
+    cmd = [os.path.join(a.llama, "llama-server"), "-m", m["path"], "-ngl", "99", "-c", "65536", "-np", "1",
            "-fa", "on", "-ctk", "q8_0", "-ctv", "q8_0", "--jinja", "--port", str(port), "--host", "127.0.0.1",
            "--temp", "0", "--seed", "0"]
     if mode == "nothink":
@@ -49,12 +49,22 @@ def run_one(a, m, mode):
             return None
         max_tokens = "16384" if mode == "think" else "1024"
         name = f"{m['name']} [{mode}]"
-        subprocess.run([sys.executable, "run_bench.py", "--model", name, "--backend", "openai",
-                        "--base-url", f"http://127.0.0.1:{port}/v1", "--temperature", "0",
-                        "--max-tokens", max_tokens], cwd=a.bench, check=False)
+        if not a.skip_omni:
+            subprocess.run([sys.executable, "run_bench.py", "--model", name, "--backend", "openai",
+                            "--base-url", f"http://127.0.0.1:{port}/v1", "--temperature", "0",
+                            "--max-tokens", max_tokens], cwd=a.bench, check=False)
+        if a.agentloop:
+            harness = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "eval", "agentloop", "harness.py")
+            cmd_h = [sys.executable, harness, "--base-url", f"http://127.0.0.1:{port}/v1", "--name", name,
+                     "--out", os.path.join(a.out, "agentloop", tag)]
+            if mode == "think":
+                cmd_h.append("--think")
+            subprocess.run(cmd_h, check=False)
     finally:
         proc.terminate()
         proc.wait(timeout=60)
+    if a.skip_omni:
+        return None
     rep = os.path.join(a.bench, "reports", f"{m['name']} [{mode}]_report.json")
     if os.path.exists(rep):
         shutil.copy(rep, a.out)
@@ -68,23 +78,34 @@ def main():
     ap.add_argument("--bench", required=True)
     ap.add_argument("--models", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--agentloop", action="store_true", help="also run the closed-loop agent eval")
+    ap.add_argument("--skip_omni", action="store_true", help="skip OmniAgent-Bench (agentloop only)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     summary_path = os.path.join(a.out, "summary.json")
     summary = json.load(open(summary_path)) if os.path.exists(summary_path) else {}
     for m in json.load(open(a.models)):
         for mode in m.get("modes", ["default"]):
-            key = f"{m['id']}__{mode}"
+            key = f"{m['id']}__{mode}" + ("__agentloop" if a.skip_omni else "")
             if key in summary:
                 continue
             r = run_one(a, m, mode)
-            if r:
+            al = os.path.join(a.out, "agentloop", f"{m['id']}__{mode}", "agentloop_summary.json")
+            if a.agentloop and os.path.exists(al):
+                s_al = json.load(open(al))
+                summary[f"{m['id']}__{mode}__agentloop"] = {k: s_al[k] for k in ("model", "passed", "total", "pass_rate")}
+                summary[f"{m['id']}__{mode}__agentloop"]["per_task"] = {x["id"]: x["passed"] for x in s_al["results"]}
+                json.dump(summary, open(summary_path, "w"), indent=2)
+            if r and not a.skip_omni:
                 summary[key] = {k: r[k] for k in ("model_name", "tasks_passed", "total_tasks", "accuracy_pct",
                                                   "weighted_score_pct", "category_breakdown")}
                 summary[key]["per_task"] = {t["id"]: round(t["points_earned"], 2) for t in r["task_results"]}
                 json.dump(summary, open(summary_path, "w"), indent=2)
     for k, v in summary.items():
-        print(f"{k:40s} pass {v['tasks_passed']}/{v['total_tasks']}  weighted {v['weighted_score_pct']:.1f}%")
+        if "agentloop" in k:
+            print(f"{k:48s} agentloop {v['passed']}/{v['total']} ({v['pass_rate']}%)")
+        else:
+            print(f"{k:48s} pass {v['tasks_passed']}/{v['total_tasks']}  weighted {v['weighted_score_pct']:.1f}%")
 
 
 if __name__ == "__main__":

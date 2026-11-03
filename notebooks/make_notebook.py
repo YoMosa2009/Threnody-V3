@@ -35,6 +35,8 @@ for repo, f in [('Qwen/Qwen2.5-Coder-7B-Instruct-GGUF', 'qwen2.5-coder-7b-instru
                 ('unsloth/Qwen3.5-9B-GGUF', 'Qwen3.5-9B-Q4_K_M.gguf')]:
     hf_hub_download(repo, f, local_dir='/content/models')
 !cd /content/Threnody && python pipeline/bench_colab.py --llama /content/llama.cpp/build/bin --bench /content/OmniAgent-Bench --models pipeline/models_baseline.json --out {DRIVE}/bench_baseline"""),
+("code", """# 4b. AgentLoop baseline: closed-loop multi-turn agent tasks with hidden tests (the hard eval)
+!cd /content/Threnody && git pull -q && python pipeline/bench_colab.py --llama /content/llama.cpp/build/bin --bench /content/OmniAgent-Bench --models pipeline/models_baseline.json --out {DRIVE}/bench_baseline --agentloop --skip_omni"""),
 ("code", """# 5. Build the SFT dataset (streams from the HF Hub, decontaminates, length-filters)
 if not os.path.exists(f'{DRIVE}/data/train.jsonl'):
     !cd /content/Threnody && python pipeline/build_data.py --out {DRIVE}/data --scale 1.0
@@ -56,7 +58,7 @@ for s in STRENGTHS:
 import json
 json.dump([{"id": f"threnody-s{s}", "name": f"Threnody-9B merge {s}", "path": f"/content/models/Threnody-9B-s{s}-Q4_K_M.gguf",
             "modes": ["nothink", "think"]} for s in STRENGTHS], open('/content/models_threnody.json', 'w'))
-!cd /content/Threnody && python pipeline/bench_colab.py --llama /content/llama.cpp/build/bin --bench /content/OmniAgent-Bench --models /content/models_threnody.json --out {DRIVE}/bench_threnody"""),
+!cd /content/Threnody && python pipeline/bench_colab.py --llama /content/llama.cpp/build/bin --bench /content/OmniAgent-Bench --models /content/models_threnody.json --out {DRIVE}/bench_threnody --agentloop"""),
 ("code", """# 9. Final export of the chosen merge: imatrix quant ladder + KLD report
 BEST = 1.0  # set from cell 8 results
 !cd /content/Threnody && python pipeline/export_gguf.py --hf /content/merged_{BEST} --llama /content/llama.cpp --calib {DRIVE}/data/val.jsonl --out {DRIVE}/gguf"""),
