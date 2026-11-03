@@ -45,3 +45,10 @@
 - Fix: uninstall torchaudio; use the system vLLM for the teacher; append teacher data to data_v2 (no re-stream); 1 epoch; merge sweep 1.0/0.75. Imports verified OK (torch 2.13, transformers 5.19, peft 0.21, fla).
 - 07:13 teacher (Qwen3.8-27B-FP8) serving; synth_tasks keeping ~60% of designed tasks (24 by 07:28).
 - Monitoring method: a notebook cell writes `MyDrive/Threnody/status.txt`, read via the Drive API (notebook output panes are not scrollable reliably).
+
+### 2026-11-03 15:50 UTC — SFT crash #2, runtime lost, moved to G4
+- Teacher stages done 09:19: synth 08:13 (tasks_train), solve_tasks kept 73 verified trajectories (105 passed-but-unverified rejected, 42 failed), regen 730 answers. `code` mode crashed (pyarrow "offset overflow" in code_contests shuffle buffer) -> 0 records; to fix if the teacher is re-run.
+- data_final: 3,707 train / 75 val, 52.4M tokens (teacher_agent 71, teacher_regen 731 + data_v2).
+- SFT crashed on step 1 at 09:26: `expected scalar type Float but found BFloat16` in chunked CE (final hidden state fp32 vs bf16 lm_head, no autocast). Fixed: cast h to lm_head dtype; eval is loss-only.
+- Colab reclaimed the idle VM. A100 unavailable on reconnect (fell back to L4 24 GB) -> switched to **G4 = RTX PRO 6000 Blackwell 96 GB** (sm_120). run_all now rebuilds llama.cpp for non-sm_80 GPUs before eval.
+- Lesson: watch the first SFT steps after every launch; a crash leaves the GPU idle.

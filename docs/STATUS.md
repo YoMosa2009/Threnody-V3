@@ -2,6 +2,9 @@
 
 _Last updated: 2026-11-03 (UTC)_
 
+## Session 3 (15:50 UTC): teacher data done, SFT relaunching on G4 (RTX PRO 6000 96 GB)
+- SFT crash (fp32 vs bf16 in chunked CE) fixed; runtime was reclaimed; A100 unavailable so moved to G4. data_final = 3,707 records, 52.4M tokens.
+
 ## Session 2 (07:30 UTC): env repaired, teacher running
 - Training crash root cause: stray system vLLM install -> torch 2.13 cu132 vs old torchaudio. Fixed (torchaudio removed), imports verified.
 - Teacher Qwen3.8-27B-FP8 served by system vLLM since 07:13; then data_teacher -> data_final -> SFT (1 epoch, 9 h cap) -> eval (merge 1.0/0.75).
