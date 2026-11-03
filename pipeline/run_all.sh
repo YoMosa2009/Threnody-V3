@@ -14,14 +14,16 @@ mark() { touch "$M/$1.done"; echo "=== $(date -u +%H:%M) done $1"; }
 # ---- 1. teacher server (Qwen3.8-27B-FP8, separate venv so Colab torch stays intact)
 if [ ! -f "$M/teacher_all.done" ]; then
   if [ ! -x /content/vllm-env/bin/vllm ]; then
-    pip -q install uv
-    uv venv /content/vllm-env --python 3.12 -q && VIRTUAL_ENV=/content/vllm-env uv pip install -q "vllm==0.32.0" datasets --torch-backend=auto
+    { python -m venv /content/vllm-env && /content/vllm-env/bin/pip install -U pip &&       /content/vllm-env/bin/pip install "vllm==0.32.0" || /content/vllm-env/bin/pip install vllm; } > "$L/vllm_install.log" 2>&1
   fi
-  /content/vllm-env/bin/vllm serve Qwen/Qwen3.8-27B-FP8 --served-model-name teacher --language-model-only \
+  if [ ! -x /content/vllm-env/bin/vllm ]; then
+    echo "!!! vllm install failed (see vllm_install.log); skipping teacher stages"; touch "$M/teacher_failed"
+  fi
+  [ -f "$M/teacher_failed" ] || /content/vllm-env/bin/vllm serve Qwen/Qwen3.8-27B-FP8 --served-model-name teacher --language-model-only \
     --max-model-len 65536 --max-num-seqs 32 --gpu-memory-utilization 0.92 --enable-auto-tool-choice \
     --tool-call-parser qwen3_coder --reasoning-parser qwen3 --port 8000 > "$L/vllm.log" 2>&1 &
   VPID=$!
-  for i in $(seq 1 180); do curl -sf http://127.0.0.1:8000/health >/dev/null && break; sleep 10; done
+  for i in $(seq 1 180); do [ -f "$M/teacher_failed" ] && break; curl -sf http://127.0.0.1:8000/health >/dev/null && break; sleep 10; done
   if curl -sf http://127.0.0.1:8000/health >/dev/null; then
     stage synth_tasks && { timeout 75m python pipeline/gen_teacher.py --mode synth_tasks --n 400 --workers 32 --out "$T" > "$L/synth_tasks.log" 2>&1; mark synth_tasks; }
     stage solve_tasks && { timeout 150m python pipeline/gen_teacher.py --mode solve_tasks --k 2 --workers 32 --out "$T" > "$L/solve_tasks.log" 2>&1; mark solve_tasks; }
