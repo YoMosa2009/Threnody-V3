@@ -73,7 +73,7 @@ class ChunkedLossTrainer(Trainer):
 
 
 def _chunk_ce(h, w, y):
-    logits = F.linear(h, w).float()
+    logits = F.linear(h.to(w.dtype), w).float()  # final norm may upcast h to fp32 outside autocast
     return F.cross_entropy(logits.view(-1, logits.size(-1)), y.reshape(-1), ignore_index=-100, reduction="sum")
 
 
@@ -167,6 +167,7 @@ def main():
         logging_steps=5,
         eval_strategy="steps",
         eval_steps=100,
+        prediction_loss_only=True,
         save_strategy="steps",
         save_steps=args.save_steps,
         save_total_limit=3,
