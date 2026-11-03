@@ -58,3 +58,12 @@ Progress log: `docs/PROGRESS.md`.
 ## Out of scope for Threnody-9B v1 (decided 2026-11-03)
 - **Biology / chemistry / general science**: not a v1 target (v1 data is coding/agent/terminal + security/tool/IF regen).
   Planned for a later Threnody version with its own science data from a June-2026+ open-weight teacher.
+
+## Post-SFT polish (approved 2026-11-03; each step short, run in order after the SFT benchmarks)
+1. **Merge-strength sweep**: add 0.85 and 0.5 to the existing 1.0 / 0.75 (merge -> Q4_K_M -> OmniAgent-Bench + AgentLoop). ~20 min each.
+2. **Checkpoint averaging**: average LoRA weights of the last checkpoints (160..final), then bench. Minutes + bench.
+3. **TIES/DARE merge with base**: keep the strongest adapter deltas to recover general knowledge; bench. ~30 min.
+4. **imatrix quant ladder + KLD** on Threnody's own agentic traces (`pipeline/export_gguf.py`). ~30-45 min.
+5. **DPO on existing teacher pairs** (if credits allow): chosen = 71 verified-passing trajectories, rejected = 105 passed-but-unverified + 42 failed. Teaches "run the tests before finishing". ~30-60 min training + bench.
+6. **MTP speculative decoding**: enable the kept MTP head in vLLM/SGLang, measure tokens/s and confirm identical outputs; document flags in the README.
+Rule for every step: the chosen model must not regress vs base on either suite. On-policy distillation from Qwen3.8-27B remains the larger step after this.
