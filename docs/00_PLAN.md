@@ -54,3 +54,7 @@ License: Apache-2.0 (weights + code). All training data permissively licensed.
 - Optional extended closed-loop eval (multi-turn sandbox like V4's AGENTIC_EVAL) if budget allows.
 
 Progress log: `docs/PROGRESS.md`.
+
+## Out of scope for Threnody-9B v1 (decided 2026-11-03)
+- **Biology / chemistry / general science**: not a v1 target (v1 data is coding/agent/terminal + security/tool/IF regen).
+  Planned for a later Threnody version with its own science data from a June-2026+ open-weight teacher.
