@@ -77,6 +77,18 @@ def _chunk_ce(h, w, y):
     return F.cross_entropy(logits.view(-1, logits.size(-1)), y.reshape(-1), ignore_index=-100, reduction="sum")
 
 
+class TimeLimit(TrainerCallback):
+    """Stop cleanly after max_hours of training; the final adapter is still saved."""
+
+    def __init__(self, max_hours):
+        self.deadline = time.time() + max_hours * 3600
+
+    def on_step_end(self, args, state, control, **kw):
+        if time.time() > self.deadline:
+            control.should_training_stop = True
+            control.should_save = True
+
+
 class Throughput(TrainerCallback):
     def __init__(self, tok_per_step):
         self.t0, self.tok_per_step = None, tok_per_step
@@ -107,10 +119,12 @@ def main():
     ap.add_argument("--alpha", type=int, default=32)
     ap.add_argument("--grad_accum", type=int, default=16)
     ap.add_argument("--save_steps", type=int, default=50)
+    ap.add_argument("--base", default=BASE)
+    ap.add_argument("--max_hours", type=float, default=1e9)
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
-    tok = AutoTokenizer.from_pretrained(BASE)
+    tok = AutoTokenizer.from_pretrained(args.base)
     cache = os.path.join(args.data, f"tokenized_{args.max_len}.pt")
     if os.path.exists(cache):
         train, val = torch.load(cache)
@@ -125,7 +139,8 @@ def main():
     print(f"train={len(train)} val={len(val)} tokens={n_tok/1e6:.1f}M avg={n_tok//len(train)}", flush=True)
 
     model = AutoModelForImageTextToText.from_pretrained(
-        BASE, dtype=torch.bfloat16, attn_implementation="sdpa", device_map={"": 0})
+        args.base, dtype=torch.bfloat16, attn_implementation="sdpa",
+        device_map={"": 0} if torch.cuda.is_available() else None)
     model.config.use_cache = False
     targets = lora_targets(model)
     print(f"LoRA on {len(targets)} linear modules, e.g. {sorted({t.rsplit('.',1)[-1] for t in targets})}", flush=True)
@@ -143,10 +158,10 @@ def main():
         max_steps=args.max_steps,
         learning_rate=args.lr,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
+        warmup_steps=0.03,
         weight_decay=0.0,
         max_grad_norm=1.0,
-        bf16=True,
+        bf16=torch.cuda.is_available(),
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         logging_steps=5,
@@ -157,13 +172,13 @@ def main():
         save_total_limit=3,
         report_to="none",
         remove_unused_columns=False,
-        dataloader_num_workers=2,
-        optim="adamw_torch_fused",
+        dataloader_num_workers=2 if torch.cuda.is_available() else 0,
+        optim="adamw_torch_fused" if torch.cuda.is_available() else "adamw_torch",
         seed=42,
     )
     trainer = ChunkedLossTrainer(model=model, args=targs, train_dataset=train, eval_dataset=val,
                                  data_collator=Collator(),
-                                 callbacks=[Throughput(n_tok / len(train) * args.grad_accum)])
+                                 callbacks=[Throughput(n_tok / len(train) * args.grad_accum), TimeLimit(args.max_hours)])
     resume = bool(glob.glob(os.path.join(args.out, "checkpoint-*")))
     trainer.train(resume_from_checkpoint=resume or None)
     final = os.path.join(args.out, "final_adapter")

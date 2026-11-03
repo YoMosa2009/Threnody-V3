@@ -378,12 +378,51 @@ def src_qwen38_terminus():
             yield {"messages": msgs, "tools": None}
 
 
+TEACHER_DIR = os.environ.get("TEACHER_DIR", "/content/drive/MyDrive/Threnody/teacher")
+
+
+def _teacher_file(name):
+    """Verified outputs written by gen_teacher.py (Qwen3.8-27B). Missing files simply yield nothing."""
+    p = os.path.join(TEACHER_DIR, name)
+    if not os.path.exists(p):
+        return
+    rows = [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+    random.Random(7).shuffle(rows)
+    for r in rows:
+        msgs = []
+        for m in r["messages"]:
+            msg = {"role": m["role"], "content": m.get("content") or ""}
+            if m["role"] == "assistant":
+                if m.get("reasoning_content"):
+                    msg["reasoning_content"] = m["reasoning_content"]
+                if m.get("tool_calls"):
+                    msg["tool_calls"] = [_call(tc["function"]["name"], tc["function"]["arguments"]) for tc in m["tool_calls"]]
+            msgs.append(msg)
+        if msgs and msgs[-1]["role"] == "assistant":
+            yield {"messages": msgs, "tools": [_tool(t) for t in r["tools"]] if r.get("tools") else None}
+
+
+def src_teacher_agent():
+    yield from _teacher_file("agent_traj.jsonl")
+
+
+def src_teacher_code():
+    yield from _teacher_file("code_verified.jsonl")
+
+
+def src_teacher_regen():
+    yield from _teacher_file("regen.jsonl")
+
+
 MIX_V2 = [
-    ("ost_claudecode", 1200),
-    ("ost_opencode", 1200),
-    ("ost_minisweagent", 1000),
-    ("ost_openhands", 800),
-    ("ost_sweagent", 800),
+    ("teacher_agent", 3000),
+    ("teacher_code", 1500),
+    ("teacher_regen", 1500),
+    ("ost_claudecode", 500),
+    ("ost_opencode", 500),
+    ("ost_minisweagent", 400),
+    ("ost_openhands", 300),
+    ("ost_sweagent", 300),
     ("qwen38_terminus", 900),
 ]
 
@@ -420,7 +459,7 @@ def main():
         tok_total = 0
         for rec in gen:
             seen += 1
-            if seen > n_target * 20:
+            if seen > n_target * 60:
                 break
             if decon.is_contaminated(record_text(rec)):
                 contaminated += 1
