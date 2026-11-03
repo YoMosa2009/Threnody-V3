@@ -2,6 +2,8 @@
 
 _Last updated: 2026-11-03 (UTC)_
 
+## HANDOFF: continue on another computer with docs/HANDOFF_PROMPT.md (training not started; runtime released 18:25 UTC)
+
 ## Session 3 (15:50 UTC): teacher data done, SFT relaunching on G4 (RTX PRO 6000 96 GB)
 - SFT crash (fp32 vs bf16 in chunked CE) fixed; runtime was reclaimed; A100 unavailable so moved to G4. data_final = 3,707 records, 52.4M tokens.
 
