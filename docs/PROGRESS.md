@@ -31,3 +31,10 @@
 - Closed-model outputs (Claude/GPT) are excluded: their terms forbid training competing models on outputs.
 - Pilot still runs (validates trainer + measures throughput/memory; data-independent).
 - Research round 2 launched → `research_notes/Threnody 2026 frontier techniques/`.
+
+### 2026-11-03 — 2026-teacher pipeline launched
+- Research round 2 (`research_notes/Threnody 2026 frontier techniques/`): all 9 v1 sources use 2025-era teachers → replaced. Teacher chosen: `Qwen/Qwen3.8-27B-FP8` (tokenizer identical to Qwen3.5-9B, verified by hash). Main public source: `nvidia/Open-SWE-Traces` (Qwen3.8-27B, 5 real harnesses, resolved flag).
+- AgentLoop baseline: V4 0/14, Qwen3.5-9B nothink 12/14, think 14/14.
+- Trainer bugs fixed: torchao conflict, transformers-5 `warmup_ratio` removal; validated end-to-end on a tiny Qwen3.5 on CPU.
+- Open-SWE-Traces trajectories are long (only ~6% ≤16k) → training context raised to 32k.
+- Launched unattended `pipeline/run_all.sh` on the A100. See `docs/STATUS.md`.
