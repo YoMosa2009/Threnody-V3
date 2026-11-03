@@ -63,6 +63,13 @@ stage sft && { python pipeline/train_sft.py --data "$DRIVE/data_final" --out "$D
 
 # ---- 4. merge sweep + GGUF + bench (OmniAgent-Bench + AgentLoop, both modes)
 if [ -f "$M/sft.done" ] && stage eval; then
+  # the Drive-cached llama.cpp is built for sm_80 (A100); rebuild for any other GPU (e.g. G4 = sm_120)
+  CC=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | head -1 | tr -d .)
+  if [ "$CC" != "80" ] && [ ! -f /content/llama.cpp/build/.arch_$CC ]; then
+    (cd /content/llama.cpp && cmake -B build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=$CC -DLLAMA_CURL=OFF -DBUILD_SHARED_LIBS=OFF \
+      && cmake --build build -j 12 --target llama-server llama-quantize llama-imatrix llama-perplexity llama-cli \
+      && touch build/.arch_$CC) >> "$L/eval.log" 2>&1
+  fi
   python - <<'EOF'
 import json
 json.dump([{"id": f"threnody-s{s}", "name": f"Threnody-9B merge {s}", "path": f"/content/models/Threnody-9B-s{s}-Q4_K_M.gguf",
