@@ -56,3 +56,10 @@
 - Monitoring: `pipeline/watchdog.sh` (detached) writes `heartbeat.txt` every 5 min and `ALERT.txt` on traceback/OOM/idle GPU/silent sft log/finish; Claude checks ALERT every 30 min and does a full checkup every 1.5 h, emailing the user for Drive re-approval or major issues.
 - 17:10 runtime lost (browser pane closed; Colab Pro doesn't keep a session without its tab). SFT was at step 41/232 at ~76 s/step, no checkpoint yet -> lost ~1 h. Fixes: save every 20 steps; RUN-ALL/WATCHDOG/LOG TAIL cells now in the repo notebook. Reconnected 17:50 on G4 (A100 offered only 40 GB). Waiting for the user's Drive approval (emailed).
 - 18:25 The built-in browser blocks Colab's Drive OAuth pop-up, so Drive can't be mounted from the Claude app. The G4 sat idle ~35 min and was released to stop spend. The user was emailed steps to start from Chrome (G4 -> cells 1, 2, 3, RUN-ALL, WATCHDOG; keep the tab open).
+
+### 2026-11-03 19:06 UTC — SFT launched from Chrome (session 4)
+- Colab opened in the user's Chrome via Claude in Chrome, pinned to commit 5f466ff. Runtime G4 (RTX PRO 6000 Blackwell 96 GB) + High-RAM.
+- First attempt mounted the wrong Drive: Chrome's default Google account (authuser=0) is a different account whose Drive had no `Threnody/` folder, so cell 1 created an empty one and RUN-ALL began reinstalling vLLM to regenerate teacher data. Caught within ~2 min (empty markers dir), killed, runtime deleted (~10 min G4 spent). An empty `Threnody/` folder (with a 250 MB `llama_bin.tgz`) was left in that other Drive.
+- Relaunched with `?authuser=1` (the project account). Verified markers (teacher_all, data_final, …) and `data_final/` before launching cells 2, 3, RUN-ALL, WATCHDOG. SFT started 19:08 (VM clock).
+- Lesson: always open the notebook with the project account's `authuser` index and check `ls $DRIVE/markers` before RUN-ALL.
+- Fixed `gen_teacher.py --mode code` pyarrow "offset overflow": stream only the needed code_contests columns, shuffle buffer 3000 -> 200 (not yet re-run).

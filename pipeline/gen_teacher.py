@@ -322,7 +322,10 @@ def main():
         from datasets import load_dataset
         out = os.path.join(a.out, "code_verified.jsonl")
         have = done_ids(out)
-        ds = load_dataset("deepmind/code_contests", split="train", streaming=True).shuffle(seed=3, buffer_size=3000)
+        # code_contests rows carry every reference solution; a large shuffle buffer of full rows hits a pyarrow
+        # "offset overflow". Keep only the columns we use and a small buffer.
+        ds = load_dataset("deepmind/code_contests", split="train", streaming=True).select_columns(
+            ["name", "description", "public_tests", "private_tests", "cf_rating"]).shuffle(seed=3, buffer_size=200)
         rows = [r for r in ds.take(a.n) if r["name"] not in have and (r.get("cf_rating") or 0) >= 1400]
         with cf.ThreadPoolExecutor(a.workers) as ex:
             for f in cf.as_completed([ex.submit(code_one, r, out) for r in rows]):
