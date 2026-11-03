@@ -2,6 +2,11 @@
 
 _Last updated: 2026-11-03 (UTC)_
 
+## Session 2 (07:30 UTC): env repaired, teacher running
+- Training crash root cause: stray system vLLM install -> torch 2.13 cu132 vs old torchaudio. Fixed (torchaudio removed), imports verified.
+- Teacher Qwen3.8-27B-FP8 served by system vLLM since 07:13; then data_teacher -> data_final -> SFT (1 epoch, 9 h cap) -> eval (merge 1.0/0.75).
+- Check progress: run the STATUS cell, then read `MyDrive/Threnody/status.txt`.
+
 ## Session 1 outcome (2026-11-03 05:21 UTC)
 - Teacher stage was SKIPPED: Colab's Python lacks `ensurepip`, so `python -m venv` failed and vLLM never installed
   (fixed in repo: now uses `virtualenv`). `markers/teacher_failed` exists; `teacher_all.done` does not.

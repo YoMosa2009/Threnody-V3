@@ -38,3 +38,10 @@
 - Trainer bugs fixed: torchao conflict, transformers-5 `warmup_ratio` removal; validated end-to-end on a tiny Qwen3.5 on CPU.
 - Open-SWE-Traces trajectories are long (only ~6% ≤16k) → training context raised to 32k.
 - Launched unattended `pipeline/run_all.sh` on the A100. See `docs/STATUS.md`.
+
+### 2026-11-03 07:30 UTC — recovery
+- data_v2 built 06:19: 2,980 records / 51.4M tokens (Open-SWE-Traces Qwen3.8-27B ×5 harnesses, avg ~23k tok; Qwen3.8 terminal 900).
+- SFT crashed at start: the first (uv) vLLM attempt had installed vLLM 0.32 into system Python → torch 2.13+cu132, stale torchaudio (cu130) broke `import transformers/peft`. A100 sat idle ~1 h (~15 CU lost).
+- Fix: uninstall torchaudio; use the system vLLM for the teacher; append teacher data to data_v2 (no re-stream); 1 epoch; merge sweep 1.0/0.75. Imports verified OK (torch 2.13, transformers 5.19, peft 0.21, fla).
+- 07:13 teacher (Qwen3.8-27B-FP8) serving; synth_tasks keeping ~60% of designed tasks (24 by 07:28).
+- Monitoring method: a notebook cell writes `MyDrive/Threnody/status.txt`, read via the Drive API (notebook output panes are not scrollable reliably).
