@@ -13,7 +13,8 @@ while true; do
   running=$(pgrep -f 'bash pipeline/[r]un_all' > /dev/null && echo yes || echo no)
   stage=$(grep -o 'start [a-z_0-9]*' "$L/run_all.log" 2>/dev/null | tail -1 | cut -d' ' -f2)
   slog="$L/$stage.log"
-  steps=$(tr '\r' '\n' < "$slog" 2>/dev/null | grep -E "'loss'|'eval_loss'|it/s\]|s/it\]" | tail -3)
+  steps=$( { tr '\r' '\n' < "$slog" 2>/dev/null | grep -E "'loss'|'eval_loss'" | tail -2; \
+             tr '\r' '\n' < "$slog" 2>/dev/null | grep -E "it/s\]|s/it\]" | tail -1; } )
   # log staleness: minutes since the stage log last changed
   stale=$(( ( $(date +%s) - $(stat -c %Y "$slog" 2>/dev/null || date +%s) ) / 60 ))
   {
