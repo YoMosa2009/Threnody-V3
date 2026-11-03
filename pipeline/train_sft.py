@@ -118,7 +118,7 @@ def main():
     ap.add_argument("--rank", type=int, default=64)
     ap.add_argument("--alpha", type=int, default=32)
     ap.add_argument("--grad_accum", type=int, default=16)
-    ap.add_argument("--save_steps", type=int, default=50)
+    ap.add_argument("--save_steps", type=int, default=20)
     ap.add_argument("--base", default=BASE)
     ap.add_argument("--max_hours", type=float, default=1e9)
     args = ap.parse_args()

@@ -28,6 +28,19 @@ else:
     !cd /content/llama.cpp/build && tar czf {CACHE} bin
 !pip -q install /content/llama.cpp/gguf-py
 !ls /content/llama.cpp/build/bin"""),
+("code", """# RUN-ALL (detached, unattended): teacher -> data -> SFT -> eval. Resumes from markers in Drive.
+import subprocess
+os.makedirs(f'{DRIVE}/logs', exist_ok=True)
+subprocess.run(['pkill', '-f', 'bash pipeline/[r]un_all'])
+subprocess.run('cd /content/Threnody && git pull -q && git log --oneline -1', shell=True)
+subprocess.Popen(f'cd /content/Threnody && DRIVE={DRIVE} nohup bash pipeline/run_all.sh >> {DRIVE}/logs/run_all.log 2>&1', shell=True, start_new_session=True)
+print('launched')"""),
+("code", """# WATCHDOG (detached): heartbeat.txt every 5 min + ALERT.txt on errors, in Drive
+subprocess.run(['pkill', '-f', 'pipeline/[w]atchdog'])
+subprocess.Popen(f'cd /content/Threnody && DRIVE={DRIVE} nohup bash pipeline/watchdog.sh > /tmp/watchdog.out 2>&1', shell=True, start_new_session=True)
+print('watchdog launched')"""),
+("code", """# LOG TAIL
+!cd /content/Threnody && git log --oneline -1; nvidia-smi --query-gpu=name,memory.used,utilization.gpu --format=csv,noheader; tail -4 {DRIVE}/logs/run_all.log; tail -c 3000 {DRIVE}/logs/sft.log | tr '\r' '\n' | grep -v 'Loading weights' | tail -8"""),
 ("code", """# 4. Baseline benchmark: V4's base, Fable-Coder-V4, Threnody's base (same harness, same settings)
 from huggingface_hub import hf_hub_download
 for repo, f in [('Qwen/Qwen2.5-Coder-7B-Instruct-GGUF', 'qwen2.5-coder-7b-instruct-q4_k_m.gguf'),
