@@ -52,3 +52,5 @@
 - SFT crashed on step 1 at 09:26: `expected scalar type Float but found BFloat16` in chunked CE (final hidden state fp32 vs bf16 lm_head, no autocast). Fixed: cast h to lm_head dtype; eval is loss-only.
 - Colab reclaimed the idle VM. A100 unavailable on reconnect (fell back to L4 24 GB) -> switched to **G4 = RTX PRO 6000 Blackwell 96 GB** (sm_120). run_all now rebuilds llama.cpp for non-sm_80 GPUs before eval.
 - Lesson: watch the first SFT steps after every launch; a crash leaves the GPU idle.
+- 16:10 SFT relaunched on G4 (torch 2.11+cu130, transformers 5.22.1, peft 0.21.2). Dtype fix confirmed: training steps run; 54 GB GPU, step 1 = 207 s (16 x ~14k-token seqs). At this pace the 9 h cap ends near step ~157/232 (~2/3 epoch). `causal_conv1d` missing -> DeltaNet conv uses the slow PyTorch fallback; worth installing before the next run.
+- Monitoring: `pipeline/watchdog.sh` (detached) writes `heartbeat.txt` every 5 min and `ALERT.txt` on traceback/OOM/idle GPU/silent sft log/finish; Claude checks ALERT every 30 min and does a full checkup every 1.5 h, emailing the user for Drive re-approval or major issues.
