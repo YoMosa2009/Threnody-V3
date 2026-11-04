@@ -42,6 +42,7 @@ def main():
     ap.add_argument("--name", default="Threnody-9B")
     ap.add_argument("--quants", default=",".join(QUANTS))
     ap.add_argument("--skip_kld", action="store_true")
+    ap.add_argument("--no_imatrix", action="store_true", help="plain k-quants (no GPU imatrix pass)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     bin_ = os.path.join(a.llama, "build", "bin")
@@ -53,7 +54,7 @@ def main():
     calib = "/content/calib.txt"
     open(calib, "w", encoding="utf-8").write(calib_text(a.calib, tok))
     imat = os.path.join(a.out, f"{a.name}.imatrix.gguf")
-    if not os.path.exists(imat):
+    if not a.no_imatrix and not os.path.exists(imat):
         sh([os.path.join(bin_, "llama-imatrix"), "-m", bf16, "-f", calib, "-o", imat, "-ngl", "99", "-c", "4096",
             "--chunks", "250"])
 
@@ -61,7 +62,7 @@ def main():
     for q in a.quants.split(","):
         dst = os.path.join(a.out, f"{a.name}-{q}.gguf")
         if not os.path.exists(dst):
-            sh([os.path.join(bin_, "llama-quantize"), "--imatrix", imat, bf16, dst, q])
+            sh([os.path.join(bin_, "llama-quantize")] + ([] if a.no_imatrix else ["--imatrix", imat]) + [bf16, dst, q])
         report[q] = {"bytes": os.path.getsize(dst)}
 
     json.dump(report, open(os.path.join(a.out, "quant_report.json"), "w"), indent=2)

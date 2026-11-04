@@ -15,6 +15,9 @@ BASE_HF=$(python -c "from huggingface_hub import snapshot_download as s; print(s
 
 # ---- generation is over: free the GPU
 pkill -f "[g]en_v2.py"; pkill -f "[v]llm serve"; sleep 15
+# resume after a relaunch: let orphaned workers from the previous copy finish instead of duplicating them
+while pgrep -f "[b]uild_v2.py" >/dev/null || pgrep -f "[g]ates.py eval" >/dev/null; do sleep 20; done
+[ -f "$DATA/stats.json" ] && [ -f "$DATA/train.jsonl" ] && [ ! -f "$M/v2l_data.done" ] && mark data
 
 # ---- 1. data mix (CPU) || base reference (GPU)
 stage data && { python $P/build_v2.py --out "$DATA" --total_tokens 25e6 --max_scan 6000 > "$L/v2_data.log" 2>&1 & DPID=$!; }
@@ -25,7 +28,7 @@ stage base && {
 [ -n "${DPID:-}" ] && { wait $DPID && mark data || fail data "see v2_data.log"; }
 
 # ---- 2. SFT (small, clean, mostly on-policy data)
-stage sft && { python $P/train_sft.py --data "$DATA" --out "$RUN" --max_len 32768 --epochs 1 --lr 1e-4 --max_hours 0.75 \
+stage sft && { python $P/train_sft.py --data "$DATA" --out "$RUN" --max_len 32768 --epochs 1 --lr 1e-4 --max_hours ${SFT_HOURS:-0.4} \
     --save_steps 10 > "$L/v2_sft.log" 2>&1 && mark sft || fail sft "see v2_sft.log"; }
 
 # ---- 3. candidates, evaluated two at a time on separate ports
@@ -67,7 +70,7 @@ stage cands && {
   wait; mark cands; }
 judge s1.0 s0.75
 # ---- 4. last resort (user rule: <= 1 hour): a softer merge, then pick the best of all
-if [ "$PASSED" != 1 ] && stage rescue; then
+if [ "$PASSED" != 1 ] && [ "${RESCUE:-0}" = 1 ] && stage rescue; then
   echo "GATE FAILED for s1.0 and s0.75 -> rescue s0.5"
   cand s0.5 0.5 8090; mark rescue
 fi
@@ -86,7 +89,7 @@ stage export && { S=${BEST#s}
   [ -d /content/merged_$BEST ] || python $P/merge.py --adapter "$RUN/final_adapter" --out /content/merged_$BEST --strength $S >> "$L/v2_export.log" 2>&1
   python $P/gates.py pin --dir /content/merged_$BEST
   python $P/export_gguf.py --hf /content/merged_$BEST --llama /content/llama.cpp --calib "$DATA/val.jsonl" --out "$DRIVE/gguf_v2" \
-    --name Threnody-9B --quants Q4_K_M,Q5_K_M,Q8_0 --skip_kld > "$L/v2_export.log" 2>&1 || fail export "see v2_export.log"
+    --name Threnody-9B --quants Q4_K_M,Q5_K_M,Q8_0 --skip_kld --no_imatrix > "$L/v2_export.log" 2>&1 || fail export "see v2_export.log"
   python /content/llama.cpp/convert_hf_to_gguf.py /content/merged_$BEST --mmproj --outfile "$DRIVE/gguf_v2/mmproj-Threnody-9B-F16.gguf" \
     --outtype f16 >> "$L/v2_export.log" 2>&1 || echo "mmproj export failed (text model unaffected)" >> "$L/v2_export.log"
   mark export; }
