@@ -42,16 +42,18 @@ if [ ! -f "$M/v2_sample.done" ] && [ ! -x "$VLLM_BIN" ]; then
 fi
 
 # ---- 1. generation: teacher (Qwen3.8-27B-FP8) + student (Qwen3.5-9B base) served together
+up() { for i in $(seq 1 90); do curl -sf localhost:$1/health >/dev/null && return 0; sleep 10; done; return 1; }
 serve() {
+  # The student must start only after the teacher has finished loading: vLLM's memory profiler fails if another
+  # process's GPU usage changes while it measures. 0.66 + 0.26 of 96 GB leaves the 27B FP8 teacher ~14 GB of KV cache.
   "$VLLM_BIN" serve Qwen/Qwen3.8-27B-FP8 --served-model-name teacher --language-model-only --max-model-len 65536 \
-    --max-num-seqs 48 --gpu-memory-utilization 0.55 --enable-auto-tool-choice --tool-call-parser qwen3_coder \
+    --max-num-seqs 48 --gpu-memory-utilization 0.66 --enable-auto-tool-choice --tool-call-parser qwen3_coder \
     --reasoning-parser qwen3 --port 8000 > "$L/vllm_teacher.log" 2>&1 &
-  sleep 240
+  up 8000 || return 1
   "$VLLM_BIN" serve Qwen/Qwen3.5-9B --served-model-name student --language-model-only --max-model-len 65536 \
-    --max-num-seqs 48 --gpu-memory-utilization 0.30 --enable-auto-tool-choice --tool-call-parser qwen3_coder \
+    --max-num-seqs 32 --gpu-memory-utilization 0.26 --enable-auto-tool-choice --tool-call-parser qwen3_coder \
     --reasoning-parser qwen3 --port 8001 > "$L/vllm_student.log" 2>&1 &
-  for i in $(seq 1 120); do curl -sf localhost:8000/health >/dev/null && curl -sf localhost:8001/health >/dev/null && return 0; sleep 10; done
-  return 1
+  up 8001
 }
 if [ ! -f "$M/v2_sample.done" ] || [ ! -f "$M/v2_sci.done" ] || [ ! -f "$M/v2_code.done" ]; then
   serve || fail serve "vLLM servers did not come up; see vllm_teacher.log / vllm_student.log"
