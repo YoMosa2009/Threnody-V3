@@ -9,11 +9,18 @@ import os
 
 from huggingface_hub import HfApi
 
-ROWS = [("AgentLoop (14, in-harness)", lambda r: f"{r['al']['passed']}/14"),
-        ("AgentLoop held-out harness (opencode, 14)", lambda r: f"{r['al_opencode']['passed']}/14"),
-        ("AgentLoop-Hard (held-out, 30)", lambda r: f"{r['hard']['passed']}/{r['hard']['total']}" if "hard" in r else "-"),
-        ("OmniAgent-Bench weighted", lambda r: f"{r['omni']['weighted']:.1f}%" if "omni" in r else "-"),
-        ("MMLU-Pro biology+chemistry (400)", lambda r: f"{r['sci']['overall']:.1f}%")]
+def _g(r, k, fmt):
+    try:
+        return fmt(r[k])
+    except (KeyError, TypeError):
+        return "not measured"
+
+
+ROWS = [("AgentLoop (14, in-harness)", lambda r: _g(r, "al", lambda v: f"{v['passed']}/{v['total']}")),
+        ("AgentLoop held-out harness (opencode, 14)", lambda r: _g(r, "al_opencode", lambda v: f"{v['passed']}/{v['total']}")),
+        ("AgentLoop-Hard (held-out, 30)", lambda r: _g(r, "hard", lambda v: f"{v['passed']}/{v['total']}")),
+        ("OmniAgent-Bench (tasks passed)", lambda r: _g(r, "omni", lambda v: f"{v['passed']}/{v['total']}")),
+        ("MMLU-Pro biology+chemistry (400)", lambda r: _g(r, "sci", lambda v: f"{v['overall']:.1f}%"))]
 
 
 def card(final, user):
@@ -33,7 +40,7 @@ Fine-tune of Qwen/Qwen3.5-9B for multi-turn agentic coding across many CLI-agent
 Training data comes only from June-2026+ open-weight models (Qwen3.8-27B teacher) and the base model's own verified
 successes. Code: https://github.com/YoMosa2009/Threnody
 
-**Status:** {status} Chosen candidate: `{final['chosen']}`.
+**Status:** {status} Chosen candidate: `{final['chosen']}` (adapter merged at that strength). {final.get('note', '')}
 
 ## Results (Q8_0, same build and chat template for both, temperature 0, non-thinking)
 | Benchmark | Qwen3.5-9B base | Threnody-9B V2 |
