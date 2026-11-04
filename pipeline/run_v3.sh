@@ -153,6 +153,11 @@ stage export && {
   [ -d "$M_DIR" ] || python $P/merge.py --adapter "$RUN/final_adapter" --out "$M_DIR" --strength "$STRENGTH" >> "$L/v3_export.log" 2>&1
   python $P/gates.py pin --dir "$M_DIR"
 
+  # Abliterate refusal direction (uncensoring) to extract maximum intelligence
+  echo "Abliterating refusal direction on $M_DIR..."
+  ABL_DIR="/content/merged_${CHOSEN}_abliterated"
+  python $P/abliterate.py --model "$M_DIR" --out "$ABL_DIR" >> "$L/v3_export.log" 2>&1 && M_DIR="$ABL_DIR" || echo "Standard model weights retained"
+
   echo "Exporting imatrix quant ladder for $CHOSEN..."
   python $P/export_gguf.py --hf "$M_DIR" --llama /content/llama.cpp --calib "$DATA/val.jsonl" \
     --out "$DRIVE/gguf_v3" --name "Threnody-9B-V3" $( [ "$DRY" = 1 ] && echo "--quants Q4_K_M" ) \
@@ -160,6 +165,14 @@ stage export && {
 
   python /content/llama.cpp/convert_hf_to_gguf.py "$M_DIR" --mmproj \
     --outfile "$DRIVE/gguf_v3/mmproj-Threnody-9B-V3-F16.gguf" --outtype f16 >> "$L/v3_export.log" 2>&1 || true
+
+  # Red Teaming and adversarial evaluation
+  echo "Running Red Teaming evaluation..."
+  /content/llama.cpp/build/bin/llama-server -m "$DRIVE/gguf_v3/Threnody-9B-V3-Q8_0.gguf" --port 8080 -ngl 99 --ctx-size 8192 > "$L/redteam_server.log" 2>&1 &
+  SERVER_PID=$!
+  sleep 10
+  python eval/redteam/harness.py --server http://127.0.0.1:8080 --out "$E/redteam_report.json" >> "$L/v3_export.log" 2>&1 || true
+  kill -9 $SERVER_PID 2>/dev/null || true
 
   mark export
 }
