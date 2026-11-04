@@ -19,7 +19,9 @@ def metrics(r):
 
 
 def svg(base, cand, title):
-    mb, mc = metrics(base), metrics(cand)
+    mc = dict(metrics(cand))
+    mb = [(k, v) for k, v in metrics(base) if k in mc]  # only metrics measured for both models
+    mc = [(k, mc[k]) for k, _ in mb]
     W, H, left, top, bottom = 760, 380, 56, 56, 64
     ph = H - top - bottom
     gw = (W - left - 24) / len(mb)
