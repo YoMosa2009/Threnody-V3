@@ -37,6 +37,10 @@ while true; do
   if [ -n "$alert" ] && [ "$alert" != "$last_alert" ]; then
     { echo "ALERT $now: $alert"; echo; cat /tmp/hb.txt; echo "--- tail $stage.log"; tr '\r' '\n' < "$slog" | tail -25; } > /tmp/alert.txt
     cp /tmp/alert.txt "$DRIVE/ALERT.txt"
+    # optional phone push: the private ntfy topic lives only in Drive (never in this public repo)
+    topic=$(cat "$DRIVE/ntfy_topic.txt" 2>/dev/null)
+    [ -n "$topic" ] && curl -s -m 20 -H "Title: Threnody alert" -H "Priority: high" \
+      -d "$alert (stage=$stage, gpu=$gpu)" "https://ntfy.sh/$topic" > /dev/null
     last_alert=$alert
   fi
   sleep 300
