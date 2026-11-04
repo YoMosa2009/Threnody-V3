@@ -241,7 +241,7 @@ def code_one(row, out):
     tests = tests[:25]
     if not tests:
         return False
-    msg = chat([{"role": "user", "content": prompt}], max_tokens=24000, temperature=0.7, effort="high")
+    msg = chat([{"role": "user", "content": prompt}], max_tokens=24000, temperature=0.7, effort="xhigh")
     m = re.findall(r"```python\n(.*?)```", msg.get("content") or "", re.S)
     if not m or not run_io_tests(m[-1], tests):
         return False
