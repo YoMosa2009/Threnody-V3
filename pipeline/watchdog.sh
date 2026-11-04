@@ -14,6 +14,7 @@ while true; do
   # follow whichever pipeline log is newest
   RL=$L/run_all.log; pfx=""
   [ "$L/run_v2.log" -nt "$RL" ] 2>/dev/null && { RL=$L/run_v2.log; pfx="v2_"; }
+  [ "$L/run_v2_lean.log" -nt "$RL" ] 2>/dev/null && { RL=$L/run_v2_lean.log; pfx="v2_"; }
   running=$(pgrep -f 'pipeline/[r]un_(all|v2)' > /dev/null && echo yes || echo no)
   stage=$(grep -o 'start [a-z_0-9]*' "$RL" 2>/dev/null | tail -1 | cut -d' ' -f2)
   slog="$L/$pfx$stage.log"

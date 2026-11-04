@@ -183,7 +183,7 @@ def evaluate(gguf, suite, out, tag="model", port=8090):
     os.makedirs(out, exist_ok=True)
     res_path = os.path.join(out, "results.json")
     res = json.load(open(res_path)) if os.path.exists(res_path) else {}
-    modes = ["nothink"] if suite == "fast" else ["nothink", "think"]
+    modes = ["nothink", "think"] if suite == "full" else ["nothink"]  # "mid": nothink, + hard + OmniAgent
     for mode in modes:
         think = mode == "think"
         r = res.get(mode, {})
@@ -196,6 +196,10 @@ def evaluate(gguf, suite, out, tag="model", port=8090):
                 r["al"] = agentloop(srv.url, d("agentloop"), think, "agentloop")
             if "al_opencode" not in r:
                 r["al_opencode"] = agentloop(srv.url, d("opencode"), think, "opencode")
+            if suite in ("mid", "full") and "hard" not in r and os.path.exists(HARD):
+                r["hard"] = agentloop(srv.url, d("hard"), think, "agentloop", HARD)
+            if suite in ("mid", "full") and "omni" not in r:
+                r["omni"] = omni(srv.url, out, think, tag)
             if suite == "full":
                 if "al_codex" not in r:
                     r["al_codex"] = agentloop(srv.url, d("codex"), think, "codex")
@@ -204,7 +208,7 @@ def evaluate(gguf, suite, out, tag="model", port=8090):
                 if "omni" not in r:
                     r["omni"] = omni(srv.url, out, think, tag)
             if "sci" not in r:
-                r["sci"] = sci(srv.url, out, think, 200 if suite == "fast" else (0 if not think else 300))
+                r["sci"] = sci(srv.url, out, think, 200 if suite == "fast" else 400 if suite == "mid" else (0 if not think else 300))
         finally:
             srv.stop()
         res[mode] = r
@@ -227,21 +231,22 @@ def gate(cand, base, suite="full"):
         checks.append({"gate": name, "cand": c, "base": b, "pass": ok})
 
     worst_rep = 0
-    for mode in (["nothink"] if suite == "fast" else ["nothink", "think"]):
+    modes = ["nothink", "think"] if suite == "full" else ["nothink"]
+    for mode in modes:
         c, b = cand[mode], base[mode]
         chk(f"{mode}: AgentLoop", c["al"]["passed"], b["al"]["passed"])
         held_c = c["al_opencode"]["passed"] + c.get("al_codex", {}).get("passed", 0)
         held_b = b["al_opencode"]["passed"] + b.get("al_codex", {}).get("passed", 0)
         chk(f"{mode}: AgentLoop held-out harnesses", held_c, held_b)
         chk(f"{mode}: MMLU-Pro bio+chem", c["sci"]["overall"], b["sci"]["overall"])
-        if suite == "full":
+        if suite in ("mid", "full"):
             chk(f"{mode}: OmniAgent weighted", c["omni"]["weighted"], b["omni"]["weighted"])
             if "hard" in c and "hard" in b:
                 chk(f"{mode}: AgentLoop-Hard", c["hard"]["passed"], b["hard"]["passed"])
         worst_rep = max([worst_rep] + [v["max_repeat"] for k, v in c.items() if isinstance(v, dict) and "max_repeat" in v])
-    if suite == "full" and all("hard" in cand[m] and "hard" in base[m] for m in ("nothink", "think")):
-        chk("AgentLoop-Hard total (must be strictly better)", sum(cand[m]["hard"]["passed"] for m in ("nothink", "think")),
-            sum(base[m]["hard"]["passed"] for m in ("nothink", "think")), strict=True)
+    if suite in ("mid", "full") and all("hard" in cand[m] and "hard" in base[m] for m in modes):
+        chk("AgentLoop-Hard total (must be strictly better)", sum(cand[m]["hard"]["passed"] for m in modes),
+            sum(base[m]["hard"]["passed"] for m in modes), strict=True)
     checks.append({"gate": "no action repeated >= 5 times", "cand": worst_rep, "base": 5, "pass": worst_rep < 5})
     return {"pass": all(x["pass"] for x in checks), "checks": checks}
 
@@ -257,14 +262,14 @@ def main():
     b.add_argument("--outdir", default="/content/models")
     e = sub.add_parser("eval")
     e.add_argument("--gguf", required=True)
-    e.add_argument("--suite", choices=["fast", "full"], default="full")
+    e.add_argument("--suite", choices=["fast", "mid", "full"], default="full")
     e.add_argument("--out", required=True)
     e.add_argument("--tag", default="model")
     e.add_argument("--port", type=int, default=8090)
     g = sub.add_parser("gate")
     g.add_argument("--cand", required=True)
     g.add_argument("--base", required=True)
-    g.add_argument("--suite", choices=["fast", "full"], default="full")
+    g.add_argument("--suite", choices=["fast", "mid", "full"], default="full")
     g.add_argument("--out", required=True)
     sub.add_parser("pin").add_argument("--dir", required=True)
     sub.add_parser("candidates").add_argument("--run_dir", required=True)

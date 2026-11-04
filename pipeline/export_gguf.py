@@ -41,6 +41,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--name", default="Threnody-9B")
     ap.add_argument("--quants", default=",".join(QUANTS))
+    ap.add_argument("--skip_kld", action="store_true")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     bin_ = os.path.join(a.llama, "build", "bin")
@@ -63,6 +64,10 @@ def main():
             sh([os.path.join(bin_, "llama-quantize"), "--imatrix", imat, bf16, dst, q])
         report[q] = {"bytes": os.path.getsize(dst)}
 
+    json.dump(report, open(os.path.join(a.out, "quant_report.json"), "w"), indent=2)
+    if a.skip_kld:
+        os.remove(bf16)
+        return
     # KL divergence of each quant vs BF16 on the agentic calibration text.
     base_logits = "/content/kld_base.bin"
     if not os.path.exists(base_logits):
