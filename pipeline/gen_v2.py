@@ -208,8 +208,9 @@ def sci_one(i, out, eval_grams):
     if not got or got[-1].upper() != q["answer"]:
         return "disagree"
     am = {"role": "assistant", "content": sol["content"]}
-    if think and sol.get("reasoning_content"):
-        am["reasoning_content"] = sol["reasoning_content"]
+    reasoning = sol.get("reasoning_content") or sol.get("reasoning")
+    if think and reasoning:
+        am["reasoning_content"] = reasoning
     append(out, {"id": f"sci{i:05d}", "field": field, "topic": topic, "think": think,
                  "messages": [{"role": "user", "content": user}, am], "tools": None})
     return f"kept_{field}"

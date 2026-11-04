@@ -111,8 +111,9 @@ def run_task(a, task, system=None, chat_fn=None, schema=None):
             msg = choice["message"]
             calls = msg.get("tool_calls") or []
             out = {"role": "assistant", "content": msg.get("content") or ""}
-            if msg.get("reasoning_content"):
-                out["reasoning_content"] = msg["reasoning_content"]
+            reasoning = msg.get("reasoning_content") or msg.get("reasoning")
+            if reasoning:
+                out["reasoning_content"] = reasoning
             if calls and not sc["text_protocol"]:
                 out["tool_calls"] = calls
             messages.append(out)

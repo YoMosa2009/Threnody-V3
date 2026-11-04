@@ -183,7 +183,7 @@ def evaluate(gguf, suite, out, tag="model", port=8090):
     os.makedirs(out, exist_ok=True)
     res_path = os.path.join(out, "results.json")
     res = json.load(open(res_path)) if os.path.exists(res_path) else {}
-    modes = ["nothink", "think"] if suite == "full" else ["nothink"]  # "mid": nothink, + hard + OmniAgent
+    modes = ["nothink", "think"] if suite in ("full", "v3") else ["nothink"]  # "mid": nothink, + hard + OmniAgent
     for mode in modes:
         think = mode == "think"
         r = res.get(mode, {})
@@ -196,9 +196,9 @@ def evaluate(gguf, suite, out, tag="model", port=8090):
                 r["al"] = agentloop(srv.url, d("agentloop"), think, "agentloop")
             if "al_opencode" not in r:
                 r["al_opencode"] = agentloop(srv.url, d("opencode"), think, "opencode")
-            if suite in ("mid", "full") and "hard" not in r and os.path.exists(HARD):
+            if suite in ("mid", "full", "v3") and "hard" not in r and os.path.exists(HARD):
                 r["hard"] = agentloop(srv.url, d("hard"), think, "agentloop", HARD)
-            if suite in ("mid", "full") and "omni" not in r:
+            if suite in ("mid", "full", "v3") and "omni" not in r:
                 r["omni"] = omni(srv.url, out, think, tag)
             if suite == "full":
                 if "al_codex" not in r:
@@ -223,7 +223,50 @@ def fast_score(r):
 
 
 # ---------------------------------------------------------------- gate
+
+def gate_v3(cand, base):
+    checks = []
+
+    def chk(name, c, b, cond):
+        checks.append({"gate": name, "cand": c, "target": b, "pass": bool(cond)})
+
+    c_nt = cand.get("nothink", cand)
+    b_nt = base.get("nothink", base)
+
+    # 1. OmniAgent-Bench: >= 93.8% and >= 92.7% weighted score
+    omni_c = c_nt.get("omni", {}).get("weighted", 0.0)
+    omni_b = b_nt.get("omni", {}).get("weighted", 92.71)
+    chk("OmniAgent-Bench weighted >= 93.8%", omni_c, 93.8, omni_c >= 93.8)
+    chk("OmniAgent-Bench beats Base", omni_c, omni_b, omni_c >= omni_b)
+
+    # 2. AgentLoop In-Harness: >= 13/14 passed (beats Base 12/14); max_repeat <= 2
+    al_c = c_nt.get("al", {}).get("passed", 0)
+    al_b = b_nt.get("al", {}).get("passed", 12)
+    rep_al = c_nt.get("al", {}).get("max_repeat", 99)
+    chk("AgentLoop In-Harness >= 13/14", f"{al_c}/14", "13/14", al_c >= 13)
+    chk("AgentLoop In-Harness beats Base", f"{al_c}/14", f"{al_b}/14", al_c > al_b or (al_c >= al_b and al_c >= 13))
+    chk("AgentLoop In-Harness max_repeat <= 2", rep_al, 2, rep_al <= 2)
+
+    # 3. AgentLoop Held-Out (opencode): >= 10/14 passed (beats Base 9/14); max_repeat <= 2
+    op_c = c_nt.get("al_opencode", {}).get("passed", 0)
+    op_b = b_nt.get("al_opencode", {}).get("passed", 9)
+    rep_op = c_nt.get("al_opencode", {}).get("max_repeat", 99)
+    chk("AgentLoop Held-Out (opencode) >= 10/14", f"{op_c}/14", "10/14", op_c >= 10)
+    chk("AgentLoop Held-Out beats Base", f"{op_c}/14", f"{op_b}/14", op_c > op_b or (op_c >= op_b and op_c >= 10))
+    chk("AgentLoop Held-Out max_repeat <= 2", rep_op, 2, rep_op <= 2)
+
+    # 4. BioChem-Hard: >= 40.0% overall, Chemistry >= 15.0%
+    bch_c = c_nt.get("biochem_hard") or c_nt.get("sci", {})
+    overall_c = bch_c.get("overall", 0.0)
+    chem_c = bch_c.get("chemistry", 0.0)
+    chk("BioChem-Hard overall >= 40.0%", f"{overall_c:.1f}%", "40.0%", overall_c >= 40.0)
+    chk("BioChem-Hard chemistry >= 15.0%", f"{chem_c:.1f}%", "15.0%", chem_c >= 15.0)
+
+    return {"pass": all(x["pass"] for x in checks), "checks": checks}
+
 def gate(cand, base, suite="full"):
+    if suite == "v3":
+        return gate_v3(cand, base)
     checks = []
 
     def chk(name, c, b, strict=False):
@@ -262,14 +305,14 @@ def main():
     b.add_argument("--outdir", default="/content/models")
     e = sub.add_parser("eval")
     e.add_argument("--gguf", required=True)
-    e.add_argument("--suite", choices=["fast", "mid", "full"], default="full")
+    e.add_argument("--suite", choices=["fast", "mid", "full", "v3"], default="full")
     e.add_argument("--out", required=True)
     e.add_argument("--tag", default="model")
     e.add_argument("--port", type=int, default=8090)
     g = sub.add_parser("gate")
     g.add_argument("--cand", required=True)
     g.add_argument("--base", required=True)
-    g.add_argument("--suite", choices=["fast", "mid", "full"], default="full")
+    g.add_argument("--suite", choices=["fast", "mid", "full", "v3"], default="full")
     g.add_argument("--out", required=True)
     sub.add_parser("pin").add_argument("--dir", required=True)
     sub.add_parser("candidates").add_argument("--run_dir", required=True)

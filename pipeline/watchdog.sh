@@ -15,7 +15,8 @@ while true; do
   RL=$L/run_all.log; pfx=""
   [ "$L/run_v2.log" -nt "$RL" ] 2>/dev/null && { RL=$L/run_v2.log; pfx="v2_"; }
   [ "$L/run_v2_lean.log" -nt "$RL" ] 2>/dev/null && { RL=$L/run_v2_lean.log; pfx="v2_"; }
-  running=$(pgrep -f 'pipeline/[r]un_(all|v2)' > /dev/null && echo yes || echo no)
+  [ "$L/run_v3.log" -nt "$RL" ] 2>/dev/null && { RL=$L/run_v3.log; pfx="v3_"; }
+  running=$(pgrep -f 'pipeline/[r]un_(all|v2|v3)' > /dev/null && echo yes || echo no)
   stage=$(grep -o 'start [a-z_0-9]*' "$RL" 2>/dev/null | tail -1 | cut -d' ' -f2)
   slog="$L/$pfx$stage.log"
   steps=$( { tr '\r' '\n' < "$slog" 2>/dev/null | grep -E "'loss'|'eval_loss'|^GATE|^\{" | tail -2; \
@@ -28,6 +29,7 @@ while true; do
     echo "--- $(basename $RL)"; tail -5 "$RL" 2>/dev/null
     echo "--- $pfx$stage.log"; echo "$steps"
     [ -f "$L/v2_gate.log" ] && { echo "--- v2_gate.log"; grep '^GATE' "$L/v2_gate.log" | tail -3; }
+    [ -f "$L/v3_gate.log" ] && { echo "--- v3_gate.log"; grep '^GATE' "$L/v3_gate.log" | tail -3; }
   } > /tmp/hb.txt
   cp /tmp/hb.txt "$DRIVE/heartbeat.txt"
 
@@ -36,10 +38,10 @@ while true; do
     alert="ERROR in $pfx$stage.log"
   fi
   f=$(grep -h '^!!! STAGE' "$RL" 2>/dev/null | tail -1); [ -n "$f" ] && alert="${alert:+$alert; }$f"
-  g=$(grep -hE '^GATE (STOP|ERROR)|^GATE FAILED' "$L/v2_gate.log" "$L/v2_select.log" 2>/dev/null | tail -1)
+  g=$(grep -hE '^GATE (STOP|ERROR)|^GATE FAILED' "$L/v2_gate.log" "$L/v2_select.log" "$L/v3_gate.log" "$L/v3_select.log" 2>/dev/null | tail -1)
   [ -n "$g" ] && alert="${alert:+$alert; }$g"
   if [ "$util" -lt 5 ] 2>/dev/null && [ -z "$procs" ]; then idle=$((idle + 1)); else idle=0; fi
-  done_re='ALL STAGES FINISHED|V2 FINISHED'
+  done_re='ALL STAGES FINISHED|V2 FINISHED|V3 FINISHED'
   [ $idle -ge 2 ] && ! grep -qE "$done_re" "$RL" && alert="${alert:+$alert; }GPU idle with no pipeline process"
   [ "$stage" = sft ] && [ $stale -ge 45 ] && alert="${alert:+$alert; }sft log silent ${stale}m"
   grep -qE "$done_re" "$RL" 2>/dev/null && alert="${alert:+$alert; }pipeline finished: $(grep -hE "$done_re" "$RL" | tail -1)"

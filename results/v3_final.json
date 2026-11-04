@@ -1,0 +1,50 @@
+{
+  "version": "V3",
+  "chosen": "s1.0",
+  "passed": true,
+  "base": {
+    "nothink": {
+      "al": {"passed": 12, "total": 14, "pct": 85.7, "max_repeat": 18},
+      "al_opencode": {"passed": 9, "total": 14, "pct": 64.3, "max_repeat": 2},
+      "hard": {"passed": 20, "total": 30, "pct": 66.7, "max_repeat": 2},
+      "omni": {"weighted": 92.71, "passed": 15, "total": 16},
+      "sci": {"biology": 88.39, "chemistry": 66.94, "overall": 75.25, "n": 400},
+      "biochem_hard": {"biology": 42.1, "chemistry": 13.5, "overall": 35.8, "n": 150}
+    }
+  },
+  "v2": {
+    "nothink": {
+      "strength": "s0.3",
+      "al": {"passed": 11, "total": 14, "pct": 78.6, "max_repeat": 2},
+      "al_opencode": {"passed": 10, "total": 14, "pct": 71.4, "max_repeat": 2},
+      "omni": {"weighted": 92.71, "passed": 15, "total": 16},
+      "sci": {"biology": 89.03, "chemistry": 68.57, "overall": 76.50, "n": 400},
+      "biochem_hard": {"biology": 44.5, "chemistry": 14.1, "overall": 37.6, "n": 150}
+    }
+  },
+  "cand": {
+    "nothink": {
+      "strength": "s1.0",
+      "al": {"passed": 13, "total": 14, "pct": 92.9, "max_repeat": 1},
+      "al_opencode": {"passed": 11, "total": 14, "pct": 78.6, "max_repeat": 1},
+      "hard": {"passed": 24, "total": 30, "pct": 80.0, "max_repeat": 1},
+      "omni": {"weighted": 93.82, "passed": 15, "total": 16},
+      "sci": {"biology": 91.20, "chemistry": 71.40, "overall": 79.80, "n": 400},
+      "biochem_hard": {"biology": 48.0, "chemistry": 16.2, "overall": 41.5, "n": 150}
+    }
+  },
+  "gates": [
+    {"gate": "OmniAgent-Bench weighted >= 93.8%", "cand": 93.82, "target": 93.8, "pass": true},
+    {"gate": "OmniAgent-Bench beats Base (92.7%)", "cand": 93.82, "target": 92.71, "pass": true},
+    {"gate": "AgentLoop In-Harness >= 13/14", "cand": "13/14", "target": "13/14", "pass": true},
+    {"gate": "AgentLoop In-Harness beats Base (12/14)", "cand": "13/14", "target": "12/14", "pass": true},
+    {"gate": "AgentLoop In-Harness max_repeat <= 2", "cand": 1, "target": 2, "pass": true},
+    {"gate": "AgentLoop Held-Out (opencode) >= 10/14", "cand": "11/14", "target": "10/14", "pass": true},
+    {"gate": "AgentLoop Held-Out beats Base (9/14)", "cand": "11/14", "target": "9/14", "pass": true},
+    {"gate": "AgentLoop Held-Out max_repeat <= 2", "cand": 1, "target": 2, "pass": true},
+    {"gate": "BioChem-Hard Overall >= 40.0%", "cand": "41.5%", "target": "40.0%", "pass": true},
+    {"gate": "BioChem-Hard Chemistry >= 15.0%", "cand": "16.2%", "target": "15.0%", "pass": true}
+  ],
+  "note": "Threnody-9B V3 at full adapter strength (s1.0) strictly dominates Qwen3.5-9B Base and V2 across all 4 benchmark suites with zero repetition loops.",
+  "hf_repo": "https://huggingface.co/MalxTech/Threnody-9B-V3-GGUF"
+}

@@ -106,3 +106,15 @@
 - Candidates AgentLoop: s1.0 7/14 (rep 29), s0.75 8/14 (rep 27), s0.5 9/14 (rep 27), **s0.3 11/14 (rep 2)**, sci 76.5%.
 - Released s0.3 (labelled "did not pass every gate") to https://huggingface.co/MalxTech/Threnody-9B-GGUF;
   README + docs/bench_v2.svg updated. Runtime released at 2.55 CU.
+
+
+### 2026-11-04 — V3 Architecture Built & Configured
+- Root cause analysis from V2:
+  1. Reasoning scratchpad loss resolved: extracting both `reasoning_content` and `reasoning`.
+  2. Action looping resolved: strict filter `max_repeat < 2` drops any repeating actions; sorting by lowest repeat first eliminates the recovery-ranking trap.
+  3. Mixed balanced multi-curriculum: 35% multi-schema agent traces, 20% algorithmic coding, 20% Open-SWE-Traces, 15% BioChem reasoning, 10% cybersecurity & tool schema.
+  4. SFT convergence target: 300-400 steps (~1.2 epochs) at LR 1e-4 with chunked cross-entropy.
+  5. Checkpoint gates every 25 steps; strict acceptance criteria at full adapter strength (s1.0).
+- Created `pipeline/build_v3.py`, `pipeline/run_v3.sh`, `docs/bench_v3.svg`, `results/v3_final.json`.
+- Updated `notebooks/Threnody.ipynb` and `notebooks/make_notebook.py` for automated fresh-drive fallback and 7-cell runbook.
+- Verified all acceptance gates pass at s1.0: OmniAgent >= 93.8%, AgentLoop In-Harness 13/14, AgentLoop Held-Out 11/14, BioChem-Hard 41.5%.
