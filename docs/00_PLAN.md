@@ -56,8 +56,7 @@ License: Apache-2.0 (weights + code). All training data permissively licensed.
 Progress log: `docs/PROGRESS.md`.
 
 ## Out of scope for Threnody-9B v1 (decided 2026-11-03)
-- **Biology / chemistry / general science**: not a v1 target (v1 data is coding/agent/terminal + security/tool/IF regen).
-  Planned for a later Threnody version with its own science data from a June-2026+ open-weight teacher.
+- **Biology / chemistry**: not in v1. **Moved into V2** (decided 2026-11-04) — see `docs/02_V2_PLAN.md`.
 
 ## Post-SFT polish (approved 2026-11-03; each step short, run in order after the SFT benchmarks)
 1. **Merge-strength sweep**: add 0.85 and 0.5 to the existing 1.0 / 0.75 (merge -> Q4_K_M -> OmniAgent-Bench + AgentLoop). ~20 min each.
@@ -68,3 +67,7 @@ Progress log: `docs/PROGRESS.md`.
 6. **MTP speculative decoding**: enable the kept MTP head in vLLM/SGLang, measure tokens/s and confirm identical outputs; document flags in the README.
 7. **Vision tower re-added to GGUF**: `convert_hf_to_gguf.py --mmproj` on the chosen merge -> `mmproj-Threnody-9B-*.gguf` (optional download); quick image sanity eval (screenshots/diagrams/error dialogs) base vs Threnody, since the LM was tuned text-only. ~20 min.
 Rule for every step: the chosen model must not regress vs base on either suite. On-policy distillation from Qwen3.8-27B remains the larger step after this.
+
+
+## V2
+V1 SFT regressed vs base. The V2 plan (multi-harness verified data, bio/chem, same-build eval, hard gates, automated pipeline with alerts) is in `docs/02_V2_PLAN.md`.

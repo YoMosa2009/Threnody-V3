@@ -66,3 +66,10 @@
 - 00:09 (11-04) **SFT finished**: 232/232 steps in 4 h 59 m (avg 77 s/step, 2.9k tok/s, peak 48.9 GB allocated / ~66 GB reserved). train_loss 0.547 (0.78 at step 5 -> ~0.46-0.53 at the end); eval_loss 0.585 @100 -> 0.568 @200 -> **0.567 final**. Adapter: `sft_v2/final_adapter`. No crash, no disconnect.
 - `pipeline/keep_ckpt.sh` (launched mid-run) preserved adapters of checkpoints 120-220 in `sft_v2_keep/` (trainer keeps only 3) for checkpoint averaging.
 - 00:09 eval stage started: merge 1.0 -> bf16 GGUF -> Q4_K_M, then 0.75, then OmniAgent-Bench + AgentLoop think/nothink.
+
+### 2026-11-04 01:45 UTC — V1 eval: regression; V2 planned
+- First eval run quantized into a missing /content/models and still wrote eval.done (fixed, 977380c). Rerun 00:43.
+- Results (Q4_K_M, temp 0; base = unsloth GGUF): nothink OmniAgent s1.0 81.7% / s0.75 83.5% vs base 92.7%; AgentLoop 5/14 / 8/14 vs 12/14. Think OmniAgent 57.5% / 61.7% vs 84.8%; AgentLoop think s1.0 9/14.
+- s0.75 > s1.0 under one build => the training delta is harmful. Main failure: identical tool call repeated to the 30-turn cap.
+- Eval flaw found: base GGUF (unsloth) uses an imatrix quant and a template whose thinking default is the opposite of ours; ours had no imatrix. Control run (base via our pipeline, STRENGTHS=0.0) queued after the eval.
+- V1 is not releasable. V2 plan written (`docs/02_V2_PLAN.md`): same-build eval, verified multi-harness data (6+ tool schemas, held-out harness eval), Open-SWE <=30% with repeat filter, 30% nothink, bio/chem with hazard filter, LR 1e-4, checkpoint gates, fully automated run_v2.sh with alerts.

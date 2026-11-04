@@ -2,7 +2,9 @@
 
 _Last updated: 2026-11-03 19:16 (UTC)_
 
-## Session 4: SFT DONE 00:09 (11-04), eval (merge + benchmarks) RUNNING on G4
+## V1 RESULT: REGRESSED vs base. Next = V2 (`docs/02_V2_PLAN.md`). Control run (base via our build) running.
+
+## Session 4: SFT DONE 00:09 (11-04), eval done
 - Colab account = project account, opened with `?authuser=1` (Chrome's default account is a different one with an empty Drive).
 - SFT 19:08 -> 00:09: 232 steps, train_loss 0.547, final eval_loss 0.567. Adapter in `sft_v2/final_adapter`; checkpoints 120-220 adapters in `sft_v2_keep/`.
 - Eval stage running: results -> `bench_threnody/summary.json`.
