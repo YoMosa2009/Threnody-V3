@@ -34,6 +34,7 @@ import harness  # noqa: E402
 import schemas  # noqa: E402
 
 TEACHER_URL = os.environ.get("TEACHER_URL", "http://127.0.0.1:8000/v1")
+TEACHER_EFFORT = os.environ.get("TEACHER_EFFORT", "medium")
 STUDENT_URL = os.environ.get("STUDENT_URL", "http://127.0.0.1:8001/v1")
 LOCK = threading.Lock()
 MAX_REPEAT = 3
@@ -55,6 +56,8 @@ def done_ids(path):
 def chat(url, model, messages, think, max_tokens, tools=None, temperature=0.7, timeout=1800):
     body = {"model": model, "messages": messages, "max_tokens": max_tokens, "temperature": temperature,
             "top_p": 0.95, "top_k": 20, "chat_template_kwargs": {"enable_thinking": think}}
+    if model == "teacher":  # Qwen3.8 defaults to xhigh effort: far too slow for bulk sampling
+        body["chat_template_kwargs"]["reasoning_effort"] = TEACHER_EFFORT
     if tools:
         body["tools"] = tools
     req = urllib.request.Request(f"{url}/chat/completions", data=json.dumps(body).encode(),
@@ -93,14 +96,14 @@ class _A:
     pass
 
 
-def plan_attempts(task, k):
+def plan_attempts(task, k, k_start=0):
     """k attempts per (task, solver): rotate schemas, ~30% nothink, ~20% renamed tools. Deterministic per task."""
     rng = random.Random(task["id"])
     out = []
     for by in ("teacher", "student"):
         names = schemas.TRAIN_SCHEMAS[:]
         rng.shuffle(names)
-        for i in range(k):
+        for i in range(k_start, k):
             out.append({"by": by, "schema": names[i % len(names)], "think": rng.random() >= NOTHINK_SHARE,
                         "renamed": rng.random() < RENAMED_SHARE, "seed": rng.randrange(1 << 30),
                         "id": f"{task['id']}#{by}{i}"})
@@ -229,6 +232,7 @@ def main():
     ap.add_argument("--mode", required=True, choices=["synth", "hard", "sample", "sci"])
     ap.add_argument("--n", type=int, default=100)
     ap.add_argument("--k", type=int, default=3, help="attempts per task per solver (sample)")
+    ap.add_argument("--k_start", type=int, default=0, help="skip the first attempts (extra samplers)")
     ap.add_argument("--solvers", default="teacher,student")
     ap.add_argument("--max_tasks", type=int, default=0)
     ap.add_argument("--workers", type=int, default=48)
@@ -266,7 +270,7 @@ def main():
         if a.max_tasks:
             tasks = tasks[:a.max_tasks]
         print(f"tasks={len(tasks)}", flush=True)
-        jobs = [(sample_one, t, att, out) for t in tasks for att in plan_attempts(t, a.k)
+        jobs = [(sample_one, t, att, out) for t in tasks for att in plan_attempts(t, a.k, a.k_start)
                 if att["by"] in solvers and att["id"] not in have]
         random.Random(0).shuffle(jobs)
         run(jobs)

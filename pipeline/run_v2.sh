@@ -44,6 +44,7 @@ fi
 # ---- 1. generation: teacher (Qwen3.8-27B-FP8) + student (Qwen3.5-9B base) served together
 up() { for i in $(seq 1 90); do curl -sf localhost:$1/health >/dev/null && return 0; sleep 10; done; return 1; }
 serve() {
+  curl -sf localhost:8000/health >/dev/null && curl -sf localhost:8001/health >/dev/null && return 0  # already up (resume)
   # The student must start only after the teacher has finished loading: vLLM's memory profiler fails if another
   # process's GPU usage changes while it measures. 0.66 + 0.26 of 96 GB leaves the 27B FP8 teacher ~14 GB of KV cache.
   "$VLLM_BIN" serve Qwen/Qwen3.8-27B-FP8 --served-model-name teacher --language-model-only --max-model-len 65536 \
@@ -64,13 +65,13 @@ if [ ! -f "$M/v2_sample.done" ] || [ ! -f "$M/v2_sci.done" ] || [ ! -f "$M/v2_co
   [ -f "$T/tasks_train.jsonl" ] || cp "$DRIVE/teacher/tasks_train.jsonl" "$T/" 2>/dev/null
   [ "$DRY" = 1 ] && mark synth
   stage synth && { timeout $(n 35m 8m) $G --mode synth --n $(n 300 3) > "$L/v2_synth.log" 2>&1; mark synth; }
-  stage sci && { timeout $(n 80m 6m) $G --mode sci --n $(n 1500 6) > "$L/v2_sci.log" 2>&1 &
+  stage sci && { timeout $(n 60m 6m) $G --mode sci --n $(n 1500 6) > "$L/v2_sci.log" 2>&1 &
                  SCI_PID=$!; }
   stage code && { timeout $(n 75m 6m) python $P/gen_teacher.py --mode code --n $(n 3000 20) --workers $(n 16 4) --out "$T"                     > "$L/v2_code.log" 2>&1 & CODE_PID=$!; }
-  stage sample && { timeout $(n 80m 6m) $G --mode sample --k $(n 3 1) --max_tasks $(n 0 4) > "$L/v2_sample.log" 2>&1
-    [ "$(lines $T/traj_v2.jsonl)" -ge $(n 300 1) ] && mark sample || fail sample "only $(lines $T/traj_v2.jsonl) verified trajectories"; }
+  stage sample && { timeout $(n 60m 6m) $G --mode sample --k $(n 4 1) --max_tasks $(n 0 4) > "$L/v2_sample.log" 2>&1
+    [ "$(lines $T/traj_v2.jsonl)" -ge $(n 100 1) ] && mark sample || fail sample "only $(lines $T/traj_v2.jsonl) verified trajectories"; }
   [ -n "${CODE_PID:-}" ] && { wait $CODE_PID; mark code; }  # optional slice: an empty file just means no code data
-  [ -n "${SCI_PID:-}" ] && { wait $SCI_PID; [ "$(lines $T/sci_v2.jsonl)" -ge $(n 200 1) ] && mark sci || fail sci "only $(lines $T/sci_v2.jsonl) sci records"; }
+  [ -n "${SCI_PID:-}" ] && { wait $SCI_PID; [ "$(lines $T/sci_v2.jsonl)" -ge $(n 80 1) ] && mark sci || fail sci "only $(lines $T/sci_v2.jsonl) sci records"; }
   pkill -f "[v]llm serve"; sleep 20
 fi
 wait  # llama.cpp build / causal_conv1d

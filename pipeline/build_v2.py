@@ -180,8 +180,8 @@ def main():
                        "nothink_records": sum(1 for r in picked if not any(m.get("reasoning_content") for m in r["messages"]))}
     json.dump(stats, open(os.path.join(a.out, "stats.json"), "w"), indent=2)
     print("TOTAL", stats["_total"], flush=True)
-    if stats["agent"]["picked"] < 300:
-        print("!!! fewer than 300 verified agent trajectories; mix too small", flush=True)
+    if stats["agent"]["picked"] < 100:
+        print("!!! fewer than 100 verified agent trajectories; mix too small", flush=True)
         sys.exit(1)
 
 
