@@ -73,3 +73,14 @@
 - s0.75 > s1.0 under one build => the training delta is harmful. Main failure: identical tool call repeated to the 30-turn cap.
 - Eval flaw found: base GGUF (unsloth) uses an imatrix quant and a template whose thinking default is the opposite of ours; ours had no imatrix. Control run (base via our pipeline, STRENGTHS=0.0) queued after the eval.
 - V1 is not releasable. V2 plan written (`docs/02_V2_PLAN.md`): same-build eval, verified multi-harness data (6+ tool schemas, held-out harness eval), Open-SWE <=30% with repeat filter, 30% nothink, bio/chem with hazard filter, LR 1e-4, checkpoint gates, fully automated run_v2.sh with alerts.
+- 02:12 Control run done (base via our build: merge 0.0, HF template, plain Q4_K_M). Same-build results:
+
+| Model | Omni nothink | Omni think | AgentLoop nothink | AgentLoop think |
+|---|---|---|---|---|
+| Base (control s0.0) | 90.4% | 81.1% | 10/14 | 10/14 |
+| V1 s0.75 | 83.5% | 61.7% | 8/14 | **11/14** |
+| V1 s1.0 | 81.7% | 57.5% | 5/14 | 9/14 |
+| (unsloth base GGUF, ref) | 92.7% | 84.8% | 12/14 | 14/14 |
+
+- Build effect (unsloth imatrix+template vs ours): ~2-4 pts Omni, ~2-4 AgentLoop tasks. Training effect: -7 to -24 pts Omni; AgentLoop nothink worse; only s0.75 think AgentLoop (+1 task) beats the control. V1 not releasable; V2 (`docs/02_V2_PLAN.md`).
+- Runtime released 02:13. Balance reported by user: 57 CU (G4 ~6 CU/h).

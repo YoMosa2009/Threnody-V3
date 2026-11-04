@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-03 19:16 (UTC)_
 
-## V1 RESULT: REGRESSED vs base. Next = V2 (`docs/02_V2_PLAN.md`). Control run (base via our build) running.
+## V1 RESULT: REGRESSED vs same-build base (Omni nothink 83.5% vs 90.4%, think 61.7% vs 81.1%). Next = V2 (`docs/02_V2_PLAN.md`). No runtime active. ~57 CU left.
 
 ## Session 4: SFT DONE 00:09 (11-04), eval done
 - Colab account = project account, opened with `?authuser=1` (Chrome's default account is a different one with an empty Drive).
