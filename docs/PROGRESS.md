@@ -93,3 +93,16 @@
   and "clever + determined" selection (insight/algorithmic/persistence tasks, recovered-from-failure preference,
   fewest-turns ranking, verified code_contests).
 - Local tests passed (schemas, mixer, gates). Not yet exercised on GPU.
+
+### 2026-11-04 02:42-07:53 UTC — V2 run (G4), released
+- Fixes during the run: vLLM servers (teacher 0.66/student 0.26, student after teacher healthy), Qwen3.8 effort
+  (`high` invalid -> xhigh; bulk sampling at medium), sampling throughput (student-only extra samplers), minimums
+  lowered to what the budget allowed.
+- Credits were ~10 CU/h (not 6): budget forced the lean finish (mid suite, SFT capped), then a rescue.
+- Data: 30 hard eval tasks, 52 new tasks (+110 V1), 121 verified trajectories (multi-schema), 138 sci Q&A;
+  mix 596 records / 2.87M tokens. Reasoning traces were lost (vLLM field name), so the mix is ~94% nothink.
+- SFT: 36 steps, 1 epoch, LR 1e-4, train loss 0.491, 23 min.
+- Base (same build, Q8_0, nothink): AgentLoop 12/14, opencode 10/14, Hard 20/30, OmniAgent 92.7%, sci 75.25%.
+- Candidates AgentLoop: s1.0 7/14 (rep 29), s0.75 8/14 (rep 27), s0.5 9/14 (rep 27), **s0.3 11/14 (rep 2)**, sci 76.5%.
+- Released s0.3 (labelled "did not pass every gate") to https://huggingface.co/MalxTech/Threnody-9B-GGUF;
+  README + docs/bench_v2.svg updated. Runtime released at 2.55 CU.

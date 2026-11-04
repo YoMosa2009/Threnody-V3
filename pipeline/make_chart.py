@@ -8,8 +8,9 @@ import json
 
 
 def metrics(r):
-    out = [("AgentLoop", 100 * r["al"]["passed"] / r["al"]["total"]),
-           ("Held-out harness", 100 * r["al_opencode"]["passed"] / r["al_opencode"]["total"])]
+    out = [("AgentLoop", 100 * r["al"]["passed"] / r["al"]["total"])]
+    if "al_opencode" in r:
+        out.append(("Held-out harness", 100 * r["al_opencode"]["passed"] / r["al_opencode"]["total"]))
     if "hard" in r:
         out.append(("AgentLoop-Hard", 100 * r["hard"]["passed"] / r["hard"]["total"]))
     if "omni" in r:

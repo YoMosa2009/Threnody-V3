@@ -2,7 +2,13 @@
 
 _Last updated: 2026-11-03 19:16 (UTC)_
 
-## V2 PIPELINE BUILT (2026-11-04), not yet run. Notebook: cells 1-3, WATCHDOG, then V2 DRY RUN or RUN-V2.
+## V2 RELEASED 2026-11-04 07:53 UTC: https://huggingface.co/MalxTech/Threnody-9B-GGUF (Q4_K_M, Q8_0, mmproj)
+- Chosen: V2 adapter merged at strength 0.3. Does NOT pass every gate: AgentLoop 11/14 vs base 12/14; MMLU-Pro bio+chem
+  76.5% vs 75.3%; no repetition loops (max 2 vs base 18). Held-out harness / Hard / OmniAgent not measured (credits).
+- Higher strengths loop (27-29 identical actions): s1.0 7/14, s0.75 8/14, s0.5 9/14. Numbers: results/v2_final.json.
+- Colab credits: 2.55 CU left, runtime released. Adapter + data in Drive (sft_v3, data_v2b, teacher/).
+- Next (needs credits): fix reasoning-field capture (vLLM `reasoning` vs `reasoning_content`), find the loop cause
+  (likely the recovered-first ranking + OST tool habits), re-run SFT with checkpoint gates; full eval of s0.3.
 
 ## V1 RESULT: REGRESSED vs same-build base (Omni nothink 83.5% vs 90.4%, think 61.7% vs 81.1%). Next = V2 (`docs/02_V2_PLAN.md`). No runtime active. ~57 CU left.
 

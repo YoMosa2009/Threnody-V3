@@ -1,36 +1,63 @@
 # Threnody
 
-> *threnody* — a song of lamentation for the dead. Haiku, Sonnet, Opus, Fable… and the darkest form of all.
+> *threnody* — a song of lamentation for the dead. An elegy for every bug it meets.
 
-**Threnody-9B** is an open-weight agentic coding model built for long, multi-turn work inside CLI coding
-harnesses. It is the successor to [Fable-Coder-V4](https://github.com/YoMosa2009/Fable-Coder-V4), rebuilt
-from scratch on `Qwen/Qwen3.5-9B` and trained on execution-grounded agent trajectories.
+**Threnody-9B** is an open-weight agentic coding model for long, multi-turn work inside CLI coding harnesses,
+fine-tuned from `Qwen/Qwen3.5-9B`. It is the successor to [Fable-Coder-V4](https://github.com/YoMosa2009/Fable-Coder-V4).
 
-> **Status: in training.** Results, weights and GGUFs will be published here when they're ready.
-> Progress log: [`docs/PROGRESS.md`](docs/PROGRESS.md).
+## Download (V2, 2026-11-04)
+**Hugging Face: [MalxTech/Threnody-9B-GGUF](https://huggingface.co/MalxTech/Threnody-9B-GGUF)**
 
-## Why it's different from Fable-Coder-V4
-| | Fable-Coder-V4 | Threnody-9B |
+| File | Size | Use |
 |---|---|---|
-| Base | Qwen2.5-Coder-7B (2024) | Qwen3.5-9B (2026), hybrid linear/full attention |
-| Context | 4k (Modelfile) | 262k native |
-| Training data | 3.5k single-turn samples | multi-turn agent trajectories with real execution feedback, tool calling, defensive security, replay |
-| Loss | whole sequence | assistant turns only |
-| Decontamination | none (bench tasks were in the train set) | 13-gram + entry-point filter vs OmniAgent-Bench |
-| Thinking | none | interleaved `<think>` before each tool call; can be turned off |
+| [`Threnody-9B-Q4_K_M.gguf`](https://huggingface.co/MalxTech/Threnody-9B-GGUF/resolve/main/Threnody-9B-Q4_K_M.gguf) | 5.6 GB | default; 8 GB+ GPUs |
+| [`Threnody-9B-Q8_0.gguf`](https://huggingface.co/MalxTech/Threnody-9B-GGUF/resolve/main/Threnody-9B-Q8_0.gguf) | 9.5 GB | near-lossless |
+| [`mmproj-Threnody-9B-F16.gguf`](https://huggingface.co/MalxTech/Threnody-9B-GGUF/resolve/main/mmproj-Threnody-9B-F16.gguf) | 0.9 GB | optional vision (images) |
 
-## Low memory by design
-- Only 8 of 32 layers use full attention, so the KV cache is ~32 KiB/token (fp16), about 2 GiB at 128k context with a `q8_0` cache.
-- Text-only GGUFs (no vision tower).
-- Quants from Q8_0 down to IQ3_M, built with an importance matrix calibrated on agent traces; a KL-divergence report is published for every quant.
+```bash
+llama-server -m Threnody-9B-Q4_K_M.gguf -ngl 99 -c 32768 -fa on -ctk q8_0 -ctv q8_0 --jinja
+```
+Add `--mmproj mmproj-Threnody-9B-F16.gguf` for image input.
+
+## Benchmarks (V2 vs. its base, same build)
+![Threnody-9B V2 vs Qwen3.5-9B](docs/bench_v2.svg)
+
+Both models: Q8_0 GGUF, identical chat template and llama.cpp build, temperature 0, non-thinking mode.
+
+| Benchmark | Qwen3.5-9B base | Threnody-9B V2 |
+|---|---|---|
+| AgentLoop (14 multi-turn repo tasks, hidden tests) | **12/14** | 11/14 |
+| Longest run of identical repeated actions (lower is better) | 18 | **2** |
+| MMLU-Pro biology + chemistry (400 questions) | 75.3% | **76.5%** (bio 89.0, chem 68.6) |
+| AgentLoop held-out harness / AgentLoop-Hard / OmniAgent-Bench | 10/14 · 20/30 · 92.7% | not measured (credits ran out) |
+
+**Honest status:** V2 does **not** beat the base model on every gate. It is slightly better at biology/chemistry, avoids
+the action-repetition loops the base model shows, and is one task behind on AgentLoop. The released weights are the V2
+adapter merged at strength 0.3: higher strengths (1.0 / 0.75 / 0.5) scored 7 / 8 / 9 of 14 on AgentLoop and fell into
+repetition loops (27–29 identical actions), so they were not released. Full numbers: [`results/v2_final.json`](results/v2_final.json).
+
+## What V2 is trained on
+- 169 verified agent trajectories in six tool-harness styles (AgentLoop, OpenHands, SWE-agent, mini-swe-agent,
+  Claude-Code-style, Aider edit blocks), from the Qwen3.8-27B teacher and the base model itself, kept only if hidden tests
+  pass **and** the agent ran the tests after its last edit; trajectories with repeated actions removed.
+- Open-SWE-Traces (Qwen3.8-27B), terminal traces, verified biology/chemistry Q&A (hazard-filtered), tool-judgment and
+  security answers. Teachers are June-2026+ open-weight models only; no closed-model outputs.
+- Every training source is decontaminated against all evaluation sets; two harnesses and 30 hard tasks are held out for testing.
+
+## Known limitations
+- Reasoning traces were lost during V2 data generation (a vLLM field-name mismatch), so V2 was trained almost entirely in
+  non-thinking format; thinking mode was not evaluated.
+- The final evaluation was cut short by the compute budget (see table).
+- V1 (2026-11-03) regressed against its base and was not released.
 
 ## Repository
 ```
-docs/       plan, V4 post-mortem, progress log
-reports/    deep-research report (base models, data, recipes, memory)
-pipeline/   decontam, build_data, train_sft, merge, export_gguf, bench_colab
-notebooks/  Threnody.ipynb — the Colab A100 notebook that runs everything
+docs/       plans (00_PLAN, 02_V2_PLAN), progress log, status, trailer prompt
+eval/       AgentLoop harness + 8 tool schemas (6 train, 2 held-out)
+pipeline/   data generation (gen_v2), mixing (build_v2), SFT, merge, same-build gates, export, HF publish
+results/    final benchmark numbers
+notebooks/  Threnody.ipynb — the Colab notebook that runs everything
 ```
 
 ## License
-Apache-2.0. All training data is permissively licensed (see `docs/00_PLAN.md`).
+Apache-2.0.
