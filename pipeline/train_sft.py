@@ -89,6 +89,19 @@ class TimeLimit(TrainerCallback):
             control.should_save = True
 
 
+class StopFile(TrainerCallback):
+    """Stop cleanly when the checkpoint gate (ckpt_gate.py) writes the STOP file."""
+
+    def __init__(self, path):
+        self.path = path
+
+    def on_step_end(self, args, state, control, **kw):
+        if self.path and os.path.exists(self.path):
+            print(f"STOP file found at step {state.global_step}: {open(self.path).read().strip()}", flush=True)
+            control.should_training_stop = True
+            control.should_save = True
+
+
 class Throughput(TrainerCallback):
     def __init__(self, tok_per_step):
         self.t0, self.tok_per_step = None, tok_per_step
@@ -121,6 +134,7 @@ def main():
     ap.add_argument("--save_steps", type=int, default=20)
     ap.add_argument("--base", default=BASE)
     ap.add_argument("--max_hours", type=float, default=1e9)
+    ap.add_argument("--stop_file", default="", help="training stops when this file appears (checkpoint gate)")
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
@@ -179,7 +193,8 @@ def main():
     )
     trainer = ChunkedLossTrainer(model=model, args=targs, train_dataset=train, eval_dataset=val,
                                  data_collator=Collator(),
-                                 callbacks=[Throughput(n_tok / len(train) * args.grad_accum), TimeLimit(args.max_hours)])
+                                 callbacks=[Throughput(n_tok / len(train) * args.grad_accum), TimeLimit(args.max_hours),
+                                            StopFile(args.stop_file)])
     resume = bool(glob.glob(os.path.join(args.out, "checkpoint-*")))
     trainer.train(resume_from_checkpoint=resume or None)
     final = os.path.join(args.out, "final_adapter")

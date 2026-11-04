@@ -9,12 +9,15 @@ from google.colab import drive
 drive.mount('/content/drive')
 import os
 DRIVE = '/content/drive/MyDrive/Threnody'
-os.makedirs(DRIVE, exist_ok=True)"""),
+os.makedirs(DRIVE, exist_ok=True)
+# Guard: the project's Drive already holds the data. An empty folder means the wrong Google account is mounted.
+assert os.path.exists(f'{DRIVE}/markers/teacher_all.done'), 'WRONG DRIVE: Threnody data not found. Reopen Colab with the project account (?authuser=N) and remount.'
+print('Drive OK:', sorted(os.listdir(f'{DRIVE}/markers')))"""),
 ("code", """# 2. Code + Python deps
 !rm -rf /content/Threnody && git clone -q https://github.com/YoMosa2009/Threnody /content/Threnody
 !test -d /content/OmniAgent-Bench || git clone -q https://github.com/YoMosa2009/OmniAgent-Bench /content/OmniAgent-Bench
 !pip -q install -U "transformers>=4.57" "peft>=0.17" "datasets>=3" accelerate flash-linear-attention && pip -q uninstall -y torchao
-os.environ['HF_HUB_ENABLE_HF_TRANSFER'] = '1'
+os.environ['HF_HUB_ENABLE_HF_TRANSFER'] = '0'
 import transformers, peft, torch; print(transformers.__version__, peft.__version__, torch.__version__)"""),
 ("code", """# 3. llama.cpp (CUDA) — built once, cached in Drive
 import os
@@ -41,6 +44,22 @@ subprocess.Popen(f'cd /content/Threnody && DRIVE={DRIVE} nohup bash pipeline/wat
 print('watchdog launched')"""),
 ("code", """# LOG TAIL
 !cd /content/Threnody && git log --oneline -1; nvidia-smi --query-gpu=name,memory.used,utilization.gpu --format=csv,noheader; tail -4 {DRIVE}/logs/run_all.log; tail -c 3000 {DRIVE}/logs/sft.log | tr '\\r' '\\n' | grep -v 'Loading weights' | tail -8"""),
+("code", """# V2 DRY RUN (~30-40 min): every V2 stage on a tiny slice, under MyDrive/Threnody/dry. Must finish with "V2 FINISHED".
+import subprocess
+subprocess.run('cd /content/Threnody && git pull -q && git log --oneline -1', shell=True)
+os.makedirs(f'{DRIVE}/dry/logs', exist_ok=True)
+subprocess.run(['pkill', '-f', 'bash pipeline/[r]un_v2'])
+subprocess.Popen(f'cd /content/Threnody && DRY=1 DRIVE={DRIVE} nohup bash pipeline/run_v2.sh >> {DRIVE}/dry/logs/run_v2.log 2>&1', shell=True, start_new_session=True)
+print('dry run launched')"""),
+("code", """# RUN-V2 (detached, unattended): generation -> data -> SFT + checkpoint gates -> candidates -> hard gates -> export.
+import subprocess
+os.makedirs(f'{DRIVE}/logs', exist_ok=True)
+subprocess.run(['pkill', '-f', 'bash pipeline/[r]un_v2'])
+subprocess.run('cd /content/Threnody && git pull -q && git log --oneline -1', shell=True)
+subprocess.Popen(f'cd /content/Threnody && DRIVE={DRIVE} nohup bash pipeline/run_v2.sh >> {DRIVE}/logs/run_v2.log 2>&1', shell=True, start_new_session=True)
+print('V2 launched')"""),
+("code", """# V2 STATUS
+!cat {DRIVE}/heartbeat.txt; cat {DRIVE}/ALERT.txt 2>/dev/null | head -3; grep '^GATE' {DRIVE}/logs/v2_gate.log 2>/dev/null | tail -5"""),
 ("code", """# 4. Baseline benchmark: V4's base, Fable-Coder-V4, Threnody's base (same harness, same settings)
 from huggingface_hub import hf_hub_download
 for repo, f in [('Qwen/Qwen2.5-Coder-7B-Instruct-GGUF', 'qwen2.5-coder-7b-instruct-q4_k_m.gguf'),

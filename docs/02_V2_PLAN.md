@@ -32,6 +32,18 @@ _Written 2026-11-04 after V1 SFT regressed vs base. Goal unchanged: **strictly b
 - Tool names and argument names are randomized per sample in ~20% of cases so the model reads the schema instead of memorizing it.
 - **Held-out harness eval**: at least 2 schemas never seen in training are used only for evaluation (AgentLoop tasks re-skinned).
 
+## 3b. Cleverness and determination (user goal: a real leap over the base, not just "no regression")
+These are selection pressures in the data, measured by the hard gates, not prompt tricks:
+- **Harder task families** for synthesis: `insight` (the obvious fix breaks a hidden invariant), `algorithmic` (naive
+  solution too slow; hidden large-input tests), `persistence` (misleading first symptom; first plausible fix fails).
+- **Determination**: per task, trajectories that hit a failing test/traceback and still reached a verified pass
+  (`recovered`) are preferred over ones that passed first try. Trajectories that stop without verifying are dropped.
+- **Cleverness/efficiency**: among passing runs, fewer turns rank higher; at most 3 per task, preferring different harnesses.
+- **Algorithmic reasoning**: ~7% verified competitive programming (code_contests, all tests pass; offset-overflow bug fixed).
+- **On-policy**: student (base 9B) successes are kept alongside teacher ones, so the model learns from its own
+  distribution, not only an imitation of a 27B model.
+- Measured by AgentLoop-Hard (strictly better than base required) and the held-out harnesses.
+
 ## 4. Training
 - bf16 LoRA r=64/α=32, **LR 1e-4** (was 1.5e-4), 1 epoch, 32k ctx, assistant-only loss, checkpoint every 20 steps, `keep_ckpt.sh` preserves all adapters.
 - Install `causal_conv1d` matching wheel before the run (DeltaNet conv speed-up).
@@ -56,3 +68,24 @@ Against the same-build base, both think and nothink:
 
 ## 7. Release (only after all gates pass)
 imatrix quant ladder Q8_0…IQ3_M + KLD report, optional vision `mmproj`, MTP speculative-decoding notes, HF upload, README with same-build base vs Threnody tables.
+
+## 8. Implementation (2026-11-04)
+| Piece | File |
+|---|---|
+| 8 tool schemas (6 train, 2 held-out), renamed variants, verified/repetition checks | `eval/agentloop/schemas.py` |
+| Harness runs any schema; `--schema`, `--tasks_file`, `--max_tasks` | `eval/agentloop/harness.py` |
+| Generation: hard eval split, task synth, multi-schema rejection sampling (teacher+student), bio/chem | `pipeline/gen_v2.py` |
+| Mix by token share, decontam, repeat filter, nothink share, determination ranking | `pipeline/build_v2.py` |
+| Same-build GGUF, eval suites, gates, candidates, ranking, template pinning | `pipeline/gates.py` |
+| Checkpoint gate beside training (CPU merge, Q8_0, fast suite, STOP file) | `pipeline/ckpt_gate.py` |
+| MMLU-Pro bio+chem eval | `pipeline/sci_eval.py` |
+| Merge: strength, CPU, TIES trim, checkpoint averaging | `pipeline/merge.py` |
+| Orchestrator (resumable, fail-fast, `DRY=1` mode) | `pipeline/run_v2.sh` |
+| Watchdog: follows V2 logs, alerts on stage/gate failure, ntfy push | `pipeline/watchdog.sh` |
+| Pinned chat template (unsloth Qwen3.5, explicit enable_thinking) | `pipeline/templates/qwen35_chat_template.jinja` |
+Local CPU tests passed: all 8 schemas solve a task with scripted actions (minisweagent's heredoc only fails on
+Windows), mixer end-to-end (decontam rejects eval-derived data, caps, nothink), gate/rank/candidate logic.
+
+## 9. Budget (G4 ~6 CU/h, 57 CU left on 2026-11-04)
+Generation ~2.5 h, base references + data ~0.5 h, SFT ~2.5-3.5 h (gates and base full eval overlap on the same GPU),
+selection ~1.5 h, export ~0.5 h: **~7.5-8 h, ~45-48 CU**. Optional dry run (`DRY=1`, tiny slice of every stage): ~1 h, ~6 CU.

@@ -47,6 +47,12 @@ CATEGORIES = {
     "cli": "writing or extending a small command-line tool with exact output format and exit codes",
     "sql": "sqlite schema/migration/query work with transactions and idempotency",
     "spec": "implementing a function from a precise docstring contract with many edge cases",
+    "insight": "a trap task: the obvious fix makes the visible test pass but breaks a hidden invariant; solving it "
+               "needs noticing a non-obvious constraint in other code, docs or data",
+    "algorithmic": "a problem where the straightforward solution is far too slow or wrong on edge cases and a clever "
+                   "algorithm or data structure is required (hidden tests include large inputs with a time limit)",
+    "persistence": "a bug with a misleading first symptom: the first plausible fix fails a hidden test and the agent must "
+                   "keep investigating (logs, minimal repro, bisecting inputs) to reach the real root cause",
 }
 DOMAINS = ["billing", "inventory", "auth", "scheduling", "logging", "caching", "messaging queue", "file storage",
            "metrics", "rate limiting", "search index", "config loading", "event sourcing", "workflow engine",
@@ -123,12 +129,12 @@ def _materialize(task, with_solution):
     return d
 
 
-def synth_one(i, out, eval_grams):
+def synth_one(i, out, eval_grams, diff=None):
     from decontam import _ngrams, _words
     rng = random.Random(i)
     cat = rng.choice(list(CATEGORIES))
     prompt = SYNTH_PROMPT.format(cat=cat, cat_desc=CATEGORIES[cat], domain=rng.choice(DOMAINS),
-                                 diff=rng.choice(["medium", "hard", "hard", "very hard (multi-step, 2 interacting bugs)"]))
+                                 diff=diff or rng.choice(["medium", "hard", "hard", "very hard (multi-step, 2 interacting bugs)"]))
     try:
         msg = chat([{"role": "user", "content": prompt}], max_tokens=24000, temperature=0.9)
         m = re.search(r"\{.*\}", msg.get("content") or "", re.S)
@@ -198,8 +204,8 @@ def solve_one(task, attempt, out):
     a.base_url, a.think, a.max_turns, a.max_tokens = URL, True, 40, 12000
     a.out = tempfile.mkdtemp(prefix="trajout_")
     sys_prompt = SYSTEMS[(hash(task["id"]) + attempt) % len(SYSTEMS)]
-    teacher_chat = lambda base_url, messages, think, max_tokens: {"message": chat(  # noqa: E731
-        messages, tools=harness.TOOLS, max_tokens=max_tokens, temperature=0.8)}
+    teacher_chat = lambda base_url, messages, think, max_tokens, tools=harness.TOOLS: {"message": chat(  # noqa: E731
+        messages, tools=tools, max_tokens=max_tokens, temperature=0.8)}
     try:
         res = harness.run_task(a, task, system=sys_prompt, chat_fn=teacher_chat)
         traj = json.load(open(os.path.join(a.out, f"traj_{task['id']}.json")))

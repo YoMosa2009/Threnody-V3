@@ -2,6 +2,8 @@
 
 _Last updated: 2026-11-03 19:16 (UTC)_
 
+## V2 PIPELINE BUILT (2026-11-04), not yet run. Notebook: cells 1-3, WATCHDOG, then V2 DRY RUN or RUN-V2.
+
 ## V1 RESULT: REGRESSED vs same-build base (Omni nothink 83.5% vs 90.4%, think 61.7% vs 81.1%). Next = V2 (`docs/02_V2_PLAN.md`). No runtime active. ~57 CU left.
 
 ## Session 4: SFT DONE 00:09 (11-04), eval done

@@ -84,3 +84,12 @@
 
 - Build effect (unsloth imatrix+template vs ours): ~2-4 pts Omni, ~2-4 AgentLoop tasks. Training effect: -7 to -24 pts Omni; AgentLoop nothink worse; only s0.75 think AgentLoop (+1 task) beats the control. V1 not releasable; V2 (`docs/02_V2_PLAN.md`).
 - Runtime released 02:13. Balance reported by user: 57 CU (G4 ~6 CU/h).
+
+### 2026-11-04 — V2 pipeline built (no GPU used)
+- New: `eval/agentloop/schemas.py` (8 harness schemas; opencode + codex held out), multi-schema harness, `gen_v2.py`,
+  `build_v2.py`, `gates.py`, `ckpt_gate.py`, `sci_eval.py`, `run_v2.sh` (+ DRY mode), merge options (CPU, TIES, averaging),
+  train_sft STOP-file hook, V2-aware watchdog, pinned unsloth chat template, notebook V2 cells + wrong-Drive guard.
+- User additions folded in: bio/chem (hazard-filtered, MMLU-Pro gate), many harnesses, full automation with alerts,
+  and "clever + determined" selection (insight/algorithmic/persistence tasks, recovered-from-failure preference,
+  fewest-turns ranking, verified code_contests).
+- Local tests passed (schemas, mixer, gates). Not yet exercised on GPU.

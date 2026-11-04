@@ -15,6 +15,7 @@ import time
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import schemas  # noqa: E402
 from tasks import TASKS  # noqa: E402
 from validate import grade  # noqa: E402
 
@@ -77,45 +78,76 @@ def run_tool(root, name, args):
         return f"error: {type(e).__name__}: {e}"
 
 
-def chat(base_url, messages, think, max_tokens):
-    body = {"model": "m", "messages": messages, "tools": TOOLS, "temperature": 0.0 if not think else 0.6,
-            "top_p": 0.95, "max_tokens": max_tokens, "chat_template_kwargs": {"enable_thinking": think}}
+def chat(base_url, messages, think, max_tokens, tools=TOOLS, temperature=None):
+    body = {"model": "m", "messages": messages, "temperature": (0.0 if not think else 0.6) if temperature is None
+            else temperature, "top_p": 0.95, "max_tokens": max_tokens, "chat_template_kwargs": {"enable_thinking": think}}
+    if tools:
+        body["tools"] = tools
     req = urllib.request.Request(f"{base_url}/chat/completions", data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=900) as r:
         return json.load(r)["choices"][0]
 
 
-def run_task(a, task, system=None, chat_fn=None):
+def run_task(a, task, system=None, chat_fn=None, schema=None):
+    """Run one task in a schema (default: the original AgentLoop tools). chat_fn(base_url, messages, think,
+    max_tokens, tools) -> {"message": ...}. Result includes `verified` (tests ran after the last edit) and
+    `max_repeat` (longest run of identical consecutive actions)."""
     chat_fn = chat_fn or chat
+    sc = schema or schemas.get("agentloop")
     root = tempfile.mkdtemp(prefix=f"agent_{task['id']}_")
     for rel, content in task["files"].items():
         p = os.path.join(root, rel)
         os.makedirs(os.path.dirname(p), exist_ok=True)
         open(p, "w", encoding="utf-8", newline="\n").write(content)
-    messages = [{"role": "system", "content": system or SYSTEM}, {"role": "user", "content": task["instruction"]}]
-    t0, turns, tool_calls, error = time.time(), 0, 0, None
+    instruction = task["instruction"]
+    if sc["text_protocol"]:
+        instruction += "\n\nRepository files:\n" + schemas.op_list(root)
+    messages = [{"role": "system", "content": system or sc["system"]}, {"role": "user", "content": instruction}]
+    t0, turns, tool_calls, error, ops = time.time(), 0, 0, None, []
     try:
         for turns in range(1, a.max_turns + 1):
-            choice = chat_fn(a.base_url, messages, a.think, a.max_tokens)
+            choice = chat_fn(a.base_url, messages, a.think, a.max_tokens, sc["tools"])
             msg = choice["message"]
             calls = msg.get("tool_calls") or []
             out = {"role": "assistant", "content": msg.get("content") or ""}
             if msg.get("reasoning_content"):
                 out["reasoning_content"] = msg["reasoning_content"]
-            if calls:
+            if calls and not sc["text_protocol"]:
                 out["tool_calls"] = calls
             messages.append(out)
+            if sc["text_protocol"]:
+                step_ops, feedback = schemas.editblock_step(root, out["content"])
+                if step_ops is None:
+                    break
+                ops += [o for o, _ in step_ops]
+                tool_calls += len(step_ops)
+                messages.append({"role": "user", "content": feedback})
+                continue
             if not calls:
                 break
+            finished = False
             for c in calls:
                 tool_calls += 1
                 try:
                     args = json.loads(c["function"]["arguments"] or "{}")
+                    assert isinstance(args, dict)
                 except Exception:
-                    args = {}
-                res = run_tool(root, c["function"]["name"], args) if args else "error: arguments were not valid JSON"
+                    args = None
+                if args is None:
+                    op, res = "other", "error: arguments were not valid JSON"
+                else:
+                    try:
+                        op, res = sc["dispatch"](root, c["function"]["name"], args)
+                    except KeyError as e:
+                        op, res = "other", f"error: missing argument {e}"
+                    except Exception as e:
+                        op, res = "other", f"error: {type(e).__name__}: {e}"
+                ops.append(op)
+                finished |= op == "finish"
                 messages.append({"role": "tool", "tool_call_id": c.get("id", ""), "content": res})
+            if finished:
+                break
     except Exception as e:
         error = f"{type(e).__name__}: {e}"
     # Hidden tests are copied in only now (overwriting anything the model wrote at those paths).
@@ -125,7 +157,8 @@ def run_task(a, task, system=None, chat_fn=None):
         open(p, "w", encoding="utf-8", newline="\n").write(content)
     passed, tail = grade(root)
     res = {"id": task["id"], "category": task["category"], "passed": passed, "turns": turns,
-           "tool_calls": tool_calls, "seconds": round(time.time() - t0, 1), "error": error, "grade_tail": tail}
+           "tool_calls": tool_calls, "seconds": round(time.time() - t0, 1), "error": error, "grade_tail": tail,
+           "schema": sc["name"], "verified": schemas.verified(ops), "max_repeat": schemas.max_repeat(messages)}
     json.dump(messages, open(os.path.join(a.out, f"traj_{task['id']}.json"), "w"), indent=1)
     shutil.rmtree(root, ignore_errors=True)
     return res
@@ -140,18 +173,28 @@ def main():
     ap.add_argument("--max_turns", type=int, default=30)
     ap.add_argument("--max_tokens", type=int, default=8192)
     ap.add_argument("--only", default="")
+    ap.add_argument("--schema", default="agentloop", help="tool schema from schemas.py (e.g. opencode, codex)")
+    ap.add_argument("--tasks_file", default="", help="JSONL of extra tasks to use instead of the built-in 14")
+    ap.add_argument("--max_tasks", type=int, default=0)
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
-    ids = [i for i in TASKS if not a.only or i in a.only.split(",")]
+    tasks = TASKS
+    if a.tasks_file:
+        tasks = {t["id"]: t for t in (json.loads(l) for l in open(a.tasks_file, encoding="utf-8") if l.strip())}
+    sc = schemas.get(a.schema)
+    ids = [i for i in tasks if not a.only or i in a.only.split(",")]
+    if a.max_tasks:
+        ids = ids[:a.max_tasks]
     results = []
     for tid in ids:
-        r = run_task(a, TASKS[tid])
+        r = run_task(a, tasks[tid], schema=sc)
         results.append(r)
         print(f"{tid:18s} {'PASS' if r['passed'] else 'FAIL'}  turns={r['turns']:2d} tools={r['tool_calls']:2d} "
-              f"{r['seconds']:6.1f}s {r['error'] or ''}", flush=True)
+              f"rep={r['max_repeat']:2d} {r['seconds']:6.1f}s {r['error'] or ''}", flush=True)
     n = sum(r["passed"] for r in results)
-    summary = {"model": a.name, "think": a.think, "passed": n, "total": len(results),
-               "pass_rate": round(100 * n / len(results), 1), "results": results}
+    summary = {"model": a.name, "think": a.think, "schema": a.schema, "passed": n, "total": len(results),
+               "pass_rate": round(100 * n / len(results), 1),
+               "max_repeat": max((r["max_repeat"] for r in results), default=0), "results": results}
     json.dump(summary, open(os.path.join(a.out, "agentloop_summary.json"), "w"), indent=2)
     print(f"\n{a.name} [{'think' if a.think else 'nothink'}]: {n}/{len(results)} passed ({summary['pass_rate']}%)")
 
