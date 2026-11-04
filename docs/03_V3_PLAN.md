@@ -17,7 +17,7 @@ While `s0.3` achieved genuine breakthroughs:
 It suffered from five critical architectural flaws that prevented total dominance:
 1. **The Reasoning Field-Name Mismatch**: A vLLM capture bug (`reasoning` vs. `reasoning_content`) stripped reasoning out of ~94% of the training dataset. Qwen3.5 is an interleaved thinking model; training it on empty `<think>` blocks amputated its latent scratchpad, causing regressions on algorithmic tasks (`CODE-03` in OmniAgent and `deep_merge`).
 2. **The Recovery-Ranking Loop Trap**: V2 prioritized trajectories that encountered failures and "recovered". However, many of those recoveries had repeated identical actions before finally passing. The model internalized action repetition as standard error response.
-3. **Severe Compute Starvation (36 Steps)**: Due to Colab credit burn (~10 CU/h), SFT was cut after only 36 steps (23 minutes) on 596 records (2.87M tokens). The adapter never achieved full convergence on complex coding logic.
+3. **Severe Compute Starvation (36 Steps)**: Due to Colab credit burn (~10 CU/h on G4), SFT was cut after only 36 steps (23 minutes) on 596 records (2.87M tokens). The adapter never achieved full convergence on complex coding logic.
 4. **Lack of Algorithmic / Pure Coding Replay**: The dataset lacked isolated unit-test coding problems, causing a slight dip in pure string manipulation (`CODE-03`).
 5. **No Negative Preference Signal (SFT Only)**: SFT can only imitate positive examples; it cannot explicitly penalize repetition when stuck.
 
@@ -32,19 +32,19 @@ flowchart TD
     B --> D["Anti-Loop Negative Filtering (<2 repeats strictly)"]
     B --> E["Algorithmic Replay & Reaction Mechanism BioChem"]
     C & D & E --> F["Stage 1: Multi-Harness SFT (300-400 steps, lr 1e-4)"]
-    F --> G["Stage 2: Targeted Anti-Loop DPO (100 steps)"]
+    F --> G["Stage 2: Checkpoint Gating & Validation (Q8_0 / Q4_K_M)"]
     G --> H["Impartial Gate Verification (s1.0 full strength)"]
 ```
 
 ### Pillar 1: Full Interleaved Reasoning (`<think>`) Restoration
-- **Fix the extractor**: Parse both `choice["message"].get("reasoning_content")` and `choice["message"].get("reasoning")`.
+- **Fix the extractor**: Parse both `choice["message"].get("reasoning_content")` and `choice["message"].get("reasoning")`, and unwrap explicit `<think>` tags inside content.
 - **Interleaved scratchpads**: The teacher (`Qwen3.8-27B-FP8`) must emit multi-step reasoning before generating tool parameters and before issuing patch edits.
 - **Dual-mode support**: 75% of trajectories include rich `<think>` reasoning; 25% are non-thinking to preserve fast deterministic CLI execution.
 
 ### Pillar 2: Eradicating the Repetition Bug at the Root
-- **Zero-tolerance repeat filter**: Any trajectory where the agent executes the identical tool call with identical arguments ≥2 times is **instantly deleted**.
+- **Zero-tolerance repeat filter**: Any trajectory where the agent executes the identical tool call with identical arguments $\ge 2$ times is **instantly deleted**.
 - **No-progress penalty**: If two consecutive turns result in the same test error or file state, the trajectory is pruned.
-- **Clean recovery only**: Traces that recover from a bug must do so by switching strategies (e.g. adding debug logs, inspecting another file), never by retrying the failed edit.
+- **Clean recovery only**: Traces that recover from a bug must do so by switching strategies (e.g. adding debug logs, inspecting another file), never by retrying the failed edit. Trajectories with 0 repeats are sorted first.
 
 ### Pillar 3: Multi-Harness & Domain Data Curriculum (3,500 High-Density Records)
 | Slice | Share | Target Capability | Quality & Filter Criteria |
@@ -55,21 +55,15 @@ flowchart TD
 | **Cybersecurity & Tool Schema** | 15% | Zero schema failure, prompt injection defense | Parameter sanitization, SQL injection remediation, prompt-injection jailbreak defense. |
 | **Terminal & CLI Operations** | 15% | Shell navigation, git, build tools | Clean bash command sequences without destructive commands. |
 
-### Pillar 4: Targeted On-Policy DPO (Direct Preference Optimization)
-After SFT, run a lightweight DPO stage (100 steps):
-- **Prompt**: Agent encounters a failed unit test or traceback.
-- **Chosen ($\mathbf{y}_w$)**: Agent inspects the traceback, explains the failure in `<think>`, and tries an alternative diagnosis or tool.
-- **Rejected ($\mathbf{y}_l$)**: Agent blindly re-runs the exact same tool call or makes an identical failed edit.
-- **Effect**: Actively suppresses looping weights, allowing **full adapter strength (`s1.0`)** to be released.
+### Pillar 4: Dedicated SFT Convergence
+Instead of aborting at step 36:
+- Train for 300–400 optimizer steps (~1.2 epochs on ~35M tokens).
+- Maintain effective batch size 16 (batch 1, grad accumulation 16) with chunked cross-entropy.
+- Learning rate: 1.0e-4 with cosine decay down to 1.0e-5.
 
-### Pillar 5: Compute Budget Optimization on Colab (Target: ~40 CU Total)
-- **Runtime**: Colab A100-SXM4-80GB or G4 (RTX PRO 6000 96GB).
-- **Environment acceleration**: Install precompiled `causal_conv1d` and `flash-attn` matching the CUDA version before SFT launches to prevent PyTorch DeltaNet fallback.
-- **Training schedule**:
-  - Effective batch size: 16 (batch 1, grad accumulation 16)
-  - Context length: 32,768 tokens (KV cache quantized to q8_0 during eval)
-  - Total steps: ~350 steps (~1.2 epochs)
-  - Optimizer: `adamw_torch_fused` or `adamw_8bit`, LR 1.0e-4 with cosine decay to 1.0e-5.
+### Pillar 5: Hardware & GPU Optimization (A100 vs. G4)
+- Run on **A100-SXM4-80GB (Recommended)** for maximum stability, precompiled wheel support, and cost efficiency.
+- Install native `causal_conv1d` and `flash-attn` to accelerate the DeltaNet and attention layers without falling back to slow PyTorch emulation.
 
 ### Pillar 6: Impartial Acceptance Gates (All must pass at `s1.0`)
 A candidate is accepted **only if it beats or matches the base model across all four gates at full strength (`s1.0`)**:
@@ -80,58 +74,80 @@ A candidate is accepted **only if it beats or matches the base model across all 
 
 ---
 
-## 3. Step-by-Step Google Colab Execution Runbook
+## 3. Google Drive Data Sharing & Cross-Account Architecture
 
-### Stage 0: Environment & Checkpoint Recovery
-```bash
-# Verify Drive mount & branch
-cd /content && git clone https://github.com/YoMosa2009/Threnody.git
-cd Threnody && git checkout main && git pull
-pip install -r requirements.txt
-# Install hardware DeltaNet speedups
-pip install --no-cache-dir causal-conv1d flash-attn
-```
+To eliminate redundant compute burn and maximize training reliability, data generated in `mosaalsaegh@gmail.com` can be seamlessly leveraged in `Moonlightstar1975@gmail.com`.
 
-### Stage 1: Data Synthesis with Qwen3.8-27B Teacher
-1. Serve `Qwen/Qwen3.8-27B-FP8` via vLLM on GPU (`port 8000`).
-2. Run `pipeline/gen_v3.py`:
-   - Fix reasoning capture: extract `reasoning_content`.
-   - Synthesize 150 new repository tasks across 8 tool schemas.
-   - Rejection sample student (`Qwen3.5-9B`) alongside teacher (`Qwen3.8-27B`).
-   - Run strict repeat pruning (`max_identical_actions < 2`).
-   - Synthesize 400 CoT chemistry & molecular biology reaction problems.
+### Why Transferring Data is a Massive Multiplier:
+1. **Zero Colab Credit Waste on Teacher Re-Generation**: Generating raw traces with `Qwen3.8-27B-FP8` burned over 15–20 compute units in V2. By reusing the raw teacher files (`traj_v2.jsonl`, `sci_v2.jsonl`, `code_verified.jsonl`, `regen.jsonl`), **100% of Colab compute units on the new account are preserved for SFT training, checkpoint gating, and evaluation**.
+2. **Pre-compiled Binary Cache**: The pre-compiled CUDA binaries (`llama_bin_sm80.tgz`) save 5–10 minutes on every fresh runtime start.
 
-### Stage 2: Mix & Decontamination (`pipeline/build_v3.py`)
-1. Assemble 3,500 records (~35M tokens).
-2. Decontaminate 13-grams against `OmniAgent-Bench` and `eval/agentloop`.
-3. Format with native Qwen3.5 chat template:
-   - Tool calling format: `<tool_call>\n<function=name>\n<arguments>{...}</arguments>\n</tool_call>`
-   - Interleaved reasoning: `<think>...</think>`
-
-### Stage 3: Supervised Fine-Tuning (SFT)
-1. Run `pipeline/train_sft.py`:
-   - Model: `Qwen/Qwen3.5-9B`
-   - LoRA r=64, $\alpha$=32 on all 248 LM linear layers (`q, k, v, o, gate, up, down`).
-   - Loss: Assistant tokens only (system prompt and tool output masked).
-   - Checkpoints saved every 25 steps to Google Drive.
-   - Run `pipeline/ckpt_gate.py` every 50 steps: auto-aborts if regression detected.
-
-### Stage 4: Anti-Loop DPO Stage (Optional but Recommended)
-1. Construct 400 preference pairs from agent error recovery points.
-2. Run LoRA DPO for 100 steps with $\beta = 0.1$ to permanently crush repeated tool loops.
-
-### Stage 5: Evaluation & Full-Strength Release
-1. Build `s1.0` GGUF directly using same-build `llama.cpp` CUDA backend.
-2. Run full test suite:
-   ```bash
-   python eval/run_all_benchmarks.py --model Threnody-9B-V3-s1.0.gguf
-   ```
-3. Verify all 4 gates pass.
-4. Export imatrix ladder (`Q4_K_M`, `Q8_0`, `mmproj`) and push to Hugging Face.
+### Recommended 2-Click Sharing Procedure:
+1. **In `mosaalsaegh@gmail.com`**:
+   - Open [Google Drive](https://drive.google.com).
+   - Right-click the `Threnody` folder -> click **Share**.
+   - Enter `Moonlightstar1975@gmail.com` and select **Editor** role -> click **Send**.
+2. **In `Moonlightstar1975@gmail.com`**:
+   - Open [Google Drive](https://drive.google.com).
+   - In the left sidebar, click **Shared with me**.
+   - Right-click the shared `Threnody` folder -> click **Organize** -> **Add shortcut**.
+   - Choose **My Drive** as the destination.
+3. **Colab Integration**:
+   - When Google Colab mounts `/content/drive`, the shortcut in `MyDrive/Threnody` is accessed transparently as a native folder.
+   - The updated notebook automatically detects all existing teacher files and markers without throwing fatal assertions.
 
 ---
 
-## 4. Target Scorecard: V3 vs. V2 vs. Base
+## 4. Hardware Analysis: A100 vs. G4 (Which GPU to Choose?)
+
+| Feature | NVIDIA A100-SXM4-80GB (Recommended) | NVIDIA RTX PRO 6000 96GB / G4 |
+| :--- | :--- | :--- |
+| **Compute Architecture** | `sm_80` (Ampere) | `sm_120` (Blackwell) / `sm_89` (Ada) |
+| **Colab Credit Rate** | **~7.5 – 8.0 CU / hour** (Cheaper) | **~10.0 – 12.0 CU / hour** (30–50% more expensive) |
+| **Kernel & Wheel Compatibility** | **100% Universal Precompiled Wheels** (`causal_conv1d`, `flash-attn`, `triton`, `flash-linear-attention`). | Requires JIT source compilation; missing precompiled wheels caused slow PyTorch fallback in V2. |
+| **VRAM Available** | **80 GB HBM2e** | **96 GB GDDR6** |
+| **VRAM for SFT (9B LoRA, 32k context)** | Consumes **~38–42 GB**. Leaves **~40 GB headroom**. | Consumes ~38–42 GB. Leaves ~54 GB headroom. |
+| **llama.cpp Compilation** | Instant restore from `llama_bin_sm80.tgz` or 2 min build with `CMAKE_CUDA_ARCHITECTURES=80`. | Needs sm120 build flag, longer compilation. |
+| **Stability & Reliability** | **Rock-solid standard datacenter stack**. | Experimental kernel warnings, higher preemption risk. |
+
+### Verdict & Recommendation:
+- **Choose the A100 (80GB High-RAM)** as your primary GPU:
+  1. It provides 100% native kernel support for `causal_conv1d` and `flash-linear-attention` out of the box.
+  2. It gives **35–45% more training hours** for the exact same compute budget.
+  3. 80 GB VRAM is more than double what 9B SFT requires at 32k context with chunked loss.
+- **Use G4 only if**: The A100 is temporarily out of capacity in Colab, or if you plan to co-serve the 27B teacher and 9B student simultaneously in vLLM (which requires >85 GB).
+
+---
+
+## 5. Automated Execution Runbook for Colab
+
+The repository provides a single, unified Colab notebook:  
+[`notebooks/Threnody.ipynb`](https://github.com/YoMosa2009/Threnody/blob/main/notebooks/Threnody.ipynb)  
+Open directly via Colab badge:  
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YoMosa2009/Threnody/blob/main/notebooks/Threnody.ipynb)
+
+### Execution Steps in Colab:
+1. **Connect Runtime**:
+   - Click `Runtime` -> `Change runtime type`.
+   - Hardware accelerator: **GPU**.
+   - GPU type: **A100** (High-RAM).
+2. **Run Cell 1 (GPU & Drive)**:
+   - Mounts Google Drive. Confirms access to `MyDrive/Threnody`.
+3. **Run Cell 2 (Environment)**:
+   - Clones repo, installs `transformers>=4.57`, `peft>=0.17`, `causal-conv1d`, `flash-linear-attention`.
+4. **Run Cell 3 (llama.cpp CUDA Build)**:
+   - Restores sm80 build from Drive or compiles cleanly.
+5. **Run Cell 4 (Launch V3 Full Pipeline)**:
+   - Executes `pipeline/run_v3.sh` in background with `nohup`.
+   - Runs unattended: data build -> base reference eval -> 350-step SFT -> checkpoint gating -> candidate evaluation (`s1.0` vs Base) -> imatrix quant export (`Q4_K_M`, `Q5_K_M`, `Q8_0`).
+6. **Run Cell 5 (Launch Watchdog)**:
+   - Background monitor writing `heartbeat.txt` and error alerts to Drive.
+7. **Monitor Progress via Cells 6 & 7**:
+   - Real-time GPU utilization, active processes, and live SFT loss curves.
+
+---
+
+## 6. Target Scorecard: V3 vs. V2 vs. Base
 
 | Benchmark Suite | Metric | Qwen3.5-9B (Base) | Threnody-9B V2 (s0.3) | **Threnody-9B V3 (Target s1.0)** |
 | :--- | :--- | :---: | :---: | :---: |

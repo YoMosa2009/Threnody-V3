@@ -54,12 +54,15 @@ repetition loops (27–29 identical actions), so they were not released. Full nu
 
 ## Repository
 ```
-docs/       plans (00_PLAN, 02_V2_PLAN), progress log, status, trailer prompt
+docs/       plans (00_PLAN, 02_V2_PLAN, 03_V3_PLAN), progress log, status, trailer prompt
 eval/       AgentLoop harness + 8 tool schemas (6 train, 2 held-out)
-pipeline/   data generation (gen_v2), mixing (build_v2), SFT, merge, same-build gates, export, HF publish
+pipeline/   data generation (gen_v2), mixing (build_v2, build_v3), training (run_v3.sh), gates, export, HF publish
 results/    final benchmark numbers
-notebooks/  Threnody.ipynb — the Colab notebook that runs everything
+notebooks/  Threnody.ipynb — the Colab notebook that runs everything (A100 / G4)
 ```
+
+## Threnody V3
+See [`docs/03_V3_PLAN.md`](docs/03_V3_PLAN.md) for the complete architecture, Google Drive cross-account sharing workflow (`mosaalsaegh@gmail.com` -> `Moonlightstar1975@gmail.com`), Colab execution guide, and the 6 Pillars designed to dominate the base model across all categories at full adapter strength (`s1.0`).
 
 ## License
 Apache-2.0.
