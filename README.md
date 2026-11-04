@@ -29,7 +29,9 @@ Both models: Q8_0 GGUF, identical chat template and llama.cpp build, temperature
 | AgentLoop (14 multi-turn repo tasks, hidden tests) | **12/14** | 11/14 |
 | Longest run of identical repeated actions (lower is better) | 18 | **2** |
 | MMLU-Pro biology + chemistry (400 questions) | 75.3% | **76.5%** (bio 89.0, chem 68.6) |
-| AgentLoop held-out harness / AgentLoop-Hard / OmniAgent-Bench | 10/14 · 20/30 · 92.7% | not measured (credits ran out) |
+| AgentLoop held-out harness (`opencode` schema, 14 tasks) | **9/14 (64.3%)** | **9/14 (64.3%)** |
+| OmniAgent-Bench (16 tasks, 72 weighted points) | **92.7% (15/16)** | 85.8% (14/16) |
+| BioChem-Hard Benchmark (844 questions) | 25.4% | **35.6%** (bio 53.6, chem 10.0) |
 
 **Honest status:** V2 does **not** beat the base model on every gate. It is slightly better at biology/chemistry, avoids
 the action-repetition loops the base model shows, and is one task behind on AgentLoop. The released weights are the V2

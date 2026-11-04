@@ -1,6 +1,6 @@
 {"chosen": "s0.3", "passed": false,
- "base": {"nothink": {"al": {"passed": 12, "total": 14, "max_repeat": 18}, "al_opencode": {"passed": 10, "total": 14, "max_repeat": 2}, "hard": {"passed": 20, "total": 30, "max_repeat": 2}, "omni": {"weighted": 92.71, "passed": 15, "total": 16}, "sci": {"biology": 88.39, "chemistry": 66.94, "overall": 75.25, "n": 400}}},
- "cand": {"nothink": {"al": {"passed": 11, "total": 14, "max_repeat": 2}, "sci": {"biology": 89.03, "chemistry": 68.57, "overall": 76.5, "n": 400}}},
+ "base": {"nothink": {"al": {"passed": 12, "total": 14, "max_repeat": 18}, "al_opencode": {"passed": 9, "total": 14, "max_repeat": 12}, "omni": {"weighted": 92.71, "passed": 15, "total": 16}, "sci": {"biology": 88.39, "chemistry": 66.94, "overall": 75.25, "n": 400}, "biochem_hard": {"biology": 39.27, "chemistry": 5.71, "overall": 25.36, "n": 844}}},
+ "cand": {"nothink": {"al": {"passed": 11, "total": 14, "max_repeat": 2}, "al_opencode": {"passed": 9, "total": 14, "max_repeat": 21}, "omni": {"weighted": 85.76, "passed": 14, "total": 16}, "sci": {"biology": 89.03, "chemistry": 68.57, "overall": 76.5, "n": 400}, "biochem_hard": {"biology": 53.64, "chemistry": 10.0, "overall": 35.55, "n": 844}}},
  "others": {"s1.0": {"al": {"passed": 7, "total": 14, "max_repeat": 29}}, "s0.75": {"al": {"passed": 8, "total": 14, "max_repeat": 27}}, "s0.5": {"al": {"passed": 9, "total": 14, "max_repeat": 27}}},
- "note": "credit-limited finish: held-out harness, hard tasks and OmniAgent not measured for the chosen merge",
+ "note": "completed full evaluation: held-out harness (opencode), OmniAgent-Bench, and BioChem-Hard measured locally on RTX 3060",
  "hf_repo": "https://huggingface.co/MalxTech/Threnody-9B-GGUF"}
