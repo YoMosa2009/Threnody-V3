@@ -70,20 +70,24 @@ if [ -f "$M/sft.done" ] && stage eval; then
       && cmake --build build -j 12 --target llama-server llama-quantize llama-imatrix llama-perplexity llama-cli \
       && touch build/.arch_$CC) >> "$L/eval.log" 2>&1
   fi
+  mkdir -p /content/models
+  export STRENGTHS=${STRENGTHS:-"1.0 0.75"}
   python - <<'EOF'
-import json
+import json, os
 json.dump([{"id": f"threnody-s{s}", "name": f"Threnody-9B merge {s}", "path": f"/content/models/Threnody-9B-s{s}-Q4_K_M.gguf",
-            "modes": ["nothink", "think"]} for s in (1.0, 0.75)], open("/content/models_threnody.json", "w"))
+            "modes": ["nothink", "think"]} for s in os.environ["STRENGTHS"].split()], open("/content/models_threnody.json", "w"))
 EOF
-  for s in 1.0 0.75; do
+  for s in $STRENGTHS; do
     g=/content/models/Threnody-9B-s$s-Q4_K_M.gguf
     [ -f "$g" ] && continue
     python pipeline/merge.py --adapter "$DRIVE/sft_v2/final_adapter" --out /content/merged_$s --strength $s >> "$L/eval.log" 2>&1
     python /content/llama.cpp/convert_hf_to_gguf.py /content/merged_$s --outfile /content/tmp_bf16.gguf --outtype bf16 >> "$L/eval.log" 2>&1
     /content/llama.cpp/build/bin/llama-quantize /content/tmp_bf16.gguf "$g" Q4_K_M >> "$L/eval.log" 2>&1
-    rm -f /content/tmp_bf16.gguf
+    rm -rf /content/tmp_bf16.gguf /content/merged_$s
+    [ -s "$g" ] || { echo "!!! quantize failed for s=$s (see eval.log)"; exit 1; }
   done
   python pipeline/bench_colab.py --llama /content/llama.cpp/build/bin --bench /content/OmniAgent-Bench \
-    --models /content/models_threnody.json --out "$DRIVE/bench_threnody" --agentloop >> "$L/eval.log" 2>&1 && mark eval
+    --models /content/models_threnody.json --out "$DRIVE/bench_threnody" --agentloop >> "$L/eval.log" 2>&1 \
+    && ! grep -q "server failed" "$L/eval.log" && mark eval || echo "!!! bench failed (see eval.log); eval not marked done"
 fi
 echo "=== ALL STAGES FINISHED $(date -u)"
