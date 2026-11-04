@@ -63,3 +63,6 @@
 - Relaunched with `?authuser=1` (the project account). Verified markers (teacher_all, data_final, …) and `data_final/` before launching cells 2, 3, RUN-ALL, WATCHDOG. SFT started 19:08 (VM clock).
 - Lesson: always open the notebook with the project account's `authuser` index and check `ls $DRIVE/markers` before RUN-ALL.
 - Fixed `gen_teacher.py --mode code` pyarrow "offset overflow": stream only the needed code_contests columns, shuffle buffer 3000 -> 200 (not yet re-run).
+- 00:09 (11-04) **SFT finished**: 232/232 steps in 4 h 59 m (avg 77 s/step, 2.9k tok/s, peak 48.9 GB allocated / ~66 GB reserved). train_loss 0.547 (0.78 at step 5 -> ~0.46-0.53 at the end); eval_loss 0.585 @100 -> 0.568 @200 -> **0.567 final**. Adapter: `sft_v2/final_adapter`. No crash, no disconnect.
+- `pipeline/keep_ckpt.sh` (launched mid-run) preserved adapters of checkpoints 120-220 in `sft_v2_keep/` (trainer keeps only 3) for checkpoint averaging.
+- 00:09 eval stage started: merge 1.0 -> bf16 GGUF -> Q4_K_M, then 0.75, then OmniAgent-Bench + AgentLoop think/nothink.
