@@ -68,8 +68,8 @@ if [ ! -f "$M/v2_sample.done" ] || [ ! -f "$M/v2_sci.done" ] || [ ! -f "$M/v2_co
   stage sci && { timeout $(n 60m 6m) $G --mode sci --n $(n 1500 6) > "$L/v2_sci.log" 2>&1 &
                  SCI_PID=$!; }
   stage code && { timeout $(n 75m 6m) python $P/gen_teacher.py --mode code --n $(n 3000 20) --workers $(n 16 4) --out "$T"                     > "$L/v2_code.log" 2>&1 & CODE_PID=$!; }
-  stage sample && { timeout $(n 60m 6m) $G --mode sample --k $(n 4 1) --max_tasks $(n 0 4) > "$L/v2_sample.log" 2>&1
-    [ "$(lines $T/traj_v2.jsonl)" -ge $(n 100 1) ] && mark sample || fail sample "only $(lines $T/traj_v2.jsonl) verified trajectories"; }
+  stage sample && { timeout ${SAMPLE_TIME:-$(n 60m 6m)} $G --mode sample --k $(n 4 1) --max_tasks $(n 0 4) > "$L/v2_sample.log" 2>&1
+    [ "$(lines $T/traj_v2.jsonl)" -ge ${SAMPLE_MIN:-$(n 100 1)} ] && mark sample || fail sample "only $(lines $T/traj_v2.jsonl) verified trajectories"; }
   [ -n "${CODE_PID:-}" ] && { wait $CODE_PID; mark code; }  # optional slice: an empty file just means no code data
   [ -n "${SCI_PID:-}" ] && { wait $SCI_PID; [ "$(lines $T/sci_v2.jsonl)" -ge $(n 80 1) ] && mark sci || fail sci "only $(lines $T/sci_v2.jsonl) sci records"; }
   pkill -f "[v]llm serve"; sleep 20
