@@ -16,8 +16,9 @@ BASE_HF=$(python -c "from huggingface_hub import snapshot_download as s; print(s
 # ---- generation is over: free the GPU
 pkill -f "[g]en_v2.py"; pkill -f "[v]llm serve"; sleep 15
 # resume after a relaunch: let orphaned workers from the previous copy finish instead of duplicating them
-while pgrep -f "[b]uild_v2.py" >/dev/null || pgrep -f "[g]ates.py eval" >/dev/null; do sleep 20; done
+while pgrep -f "[b]uild_v2.py" >/dev/null || pgrep -f "[g]ates.py eval" >/dev/null || pgrep -f "[t]rain_sft.py" >/dev/null; do sleep 20; done
 [ -f "$DATA/stats.json" ] && [ -f "$DATA/train.jsonl" ] && [ ! -f "$M/v2l_data.done" ] && mark data
+[ -d "$RUN/final_adapter" ] && [ ! -f "$M/v2l_sft.done" ] && mark sft
 
 # ---- 1. data mix (CPU) || base reference (GPU)
 stage data && { python $P/build_v2.py --out "$DATA" --total_tokens 25e6 --max_scan 6000 > "$L/v2_data.log" 2>&1 & DPID=$!; }
