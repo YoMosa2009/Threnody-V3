@@ -14,7 +14,7 @@
 
 ## Benchmark Scorecard (V3 vs. V2 vs. Base)
 
-![Threnody 3.0 vs V2 vs Base](docs/bench_v3.svg)
+![Threnody 3.0 vs V2 vs Base](docs/benchmark_scorecard.svg)
 
 All models evaluated under identical conditions: Q8_0 and Q4_K_M GGUF builds, pinned chat template, temperature 0, non-thinking mode.
 

@@ -49,9 +49,17 @@
     .col-subtitle { fill: #64748b; font-size: 11px; font-weight: 500; }
     .grid-line { stroke: #e2e8f0; stroke-dasharray: 4,4; stroke-width: 0.8px; }
     .grid-label { fill: #94a3b8; font-size: 9.5px; font-weight: 500; text-anchor: end; }
-    .val-pct { fill: #0f172a; font-size: 12px; font-weight: 700; text-anchor: middle; }
-    .val-pct-v3 { fill: #ea580c; font-size: 12.5px; font-weight: 800; text-anchor: middle; }
+    
+    /* Value Label Pills */
+    .val-pill-base { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 0.8px; }
+    .val-pill-v2 { fill: #eff6ff; stroke: #bfdbfe; stroke-width: 0.8px; }
+    .val-pill-v3 { fill: #fff7ed; stroke: #fed7aa; stroke-width: 1px; filter: drop-shadow(0 1px 2px rgba(234, 88, 12, 0.15)); }
+
+    .val-pct { fill: #0f172a; font-size: 11.5px; font-weight: 700; text-anchor: middle; }
+    .val-pct-v3 { fill: #c2410c; font-size: 12px; font-weight: 800; text-anchor: middle; }
     .val-sub { fill: #64748b; font-size: 9.5px; font-weight: 600; text-anchor: middle; }
+    .val-sub-v3 { fill: #ea580c; font-size: 9.5px; font-weight: 700; text-anchor: middle; }
+
     .col-footer-box { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1px; }
     .col-footer-text { fill: #334155; font-size: 10.5px; font-weight: 600; text-anchor: middle; }
     .badge-win-bg { fill: #ecfdf5; stroke: #a7f3d0; stroke-width: 1px; }
@@ -73,9 +81,16 @@
       .col-subtitle { fill: #94a3b8; }
       .grid-line { stroke: #1e293b; }
       .grid-label { fill: #64748b; }
+
+      .val-pill-base { fill: #1e293b; stroke: #334155; }
+      .val-pill-v2 { fill: #172554; stroke: #1e40af; }
+      .val-pill-v3 { fill: #431407; stroke: #9a3412; }
+
       .val-pct { fill: #f8fafc; }
-      .val-pct-v3 { fill: #fb923c; }
+      .val-pct-v3 { fill: #fdba74; }
       .val-sub { fill: #94a3b8; }
+      .val-sub-v3 { fill: #fb923c; }
+
       .col-footer-box { fill: #0f172a; stroke: #1e293b; }
       .col-footer-text { fill: #cbd5e1; }
       .badge-win-bg { fill: #064e3b; stroke: #047857; }
@@ -91,11 +106,11 @@
   <rect class="card-border" x="14" y="14" width="932" height="512" rx="12" />
 
   <!-- ==================== HEADER ==================== -->
-  <text class="eyebrow" x="38" y="44">Axiom Inference • Verified Benchmark</text>
-  <text class="title" x="38" y="70">Threnody 3.0 vs. Base vs. V2 Scorecard</text>
+  <text class="eyebrow" x="38" y="44">Axiom Inference • Frontier Benchmark</text>
+  <text class="title" x="38" y="70">Threnody 3.0 Performance Scorecard</text>
   <text class="subtitle" x="38" y="90">Full adapter strength (s0.75) strictly dominates held-out coding and domain reasoning with zero action looping</text>
 
-  <!-- Legend (Top Right) -->
+  <!-- Legend (Top Right - Ample Clearance from Title) -->
   <g transform="translate(545, 54)">
     <!-- Base -->
     <rect x="0" y="3" width="12" height="12" rx="3" fill="url(#bar-base)" />
@@ -114,19 +129,15 @@
 
   <!-- ==================== COLUMN 1: Held-Out Coding ==================== -->
   <g transform="translate(36, 110)">
-    <!-- Card Frame -->
     <rect class="column-bg" width="212" height="364" rx="10" />
 
-    <!-- Header -->
     <text class="col-title" x="14" y="24">Held-Out Coding</text>
     <text class="col-subtitle" x="14" y="39">opencode • 14 unseen tasks</text>
     
-    <!-- Dominance Badge -->
     <rect class="badge-win-bg" x="134" y="12" width="64" height="20" rx="10" />
     <text class="badge-win-txt" x="166" y="26" text-anchor="middle">+7.2% WIN</text>
 
-    <!-- Chart Area Grid Lines (0%, 25%, 50%, 75%, 100%) -->
-    <!-- Base y = 290. 100% = 190px (1% = 1.90px) -->
+    <!-- Grid Lines (0%, 25%, 50%, 75%, 100%) -->
     <line class="grid-line" x1="14" y1="100.0" x2="198" y2="100.0" />
     <text class="grid-label" x="206" y="103.0">100%</text>
     <line class="grid-line" x1="14" y1="147.5" x2="198" y2="147.5" />
@@ -139,20 +150,22 @@
 
     <!-- Bar 1: Base (85.7% -> h = 162.8, y = 127.2) -->
     <rect x="25" y="127.2" width="38" height="162.8" rx="5" fill="url(#bar-base)" />
-    <text class="val-pct" x="44" y="112.0">85.7%</text>
-    <text class="val-sub" x="44" y="123.0">12/14</text>
+    <rect class="val-pill-base" x="21" y="93" width="46" height="28" rx="5" />
+    <text class="val-pct" x="44" y="106.0">85.7%</text>
+    <text class="val-sub" x="44" y="117.0">12/14</text>
 
     <!-- Bar 2: V2 (71.4% -> h = 135.7, y = 154.3) -->
     <rect x="75" y="154.3" width="38" height="135.7" rx="5" fill="url(#bar-v2)" />
-    <text class="val-pct" x="94" y="139.0">71.4%</text>
-    <text class="val-sub" x="94" y="150.0">10/14</text>
+    <rect class="val-pill-v2" x="71" y="120" width="46" height="28" rx="5" />
+    <text class="val-pct" x="94" y="133.0">71.4%</text>
+    <text class="val-sub" x="94" y="144.0">10/14</text>
 
     <!-- Bar 3: V3 (92.9% -> h = 176.5, y = 113.5) -->
     <rect x="125" y="113.5" width="38" height="176.5" rx="5" fill="url(#bar-v3)" filter="url(#glow-v3)" />
-    <text class="val-pct-v3" x="144" y="97.0">92.9%</text>
-    <text class="val-sub" x="144" y="108.0" fill="#ea580c">13/14</text>
+    <rect class="val-pill-v3" x="121" y="79" width="46" height="28" rx="5" />
+    <text class="val-pct-v3" x="144" y="92.0">92.9%</text>
+    <text class="val-sub-v3" x="144" y="103.0">13/14</text>
 
-    <!-- Card Footer -->
     <rect class="col-footer-box" x="12" y="310" width="188" height="38" rx="7" />
     <text class="col-footer-text" x="106" y="326">Zero Action Loops (rep=1)</text>
     <text class="col-footer-text" x="106" y="339" font-size="9.5px" fill="#64748b">12 of 13 passed in 1 attempt</text>
@@ -160,18 +173,14 @@
 
   <!-- ==================== COLUMN 2: BioChem Reasoning ==================== -->
   <g transform="translate(264, 110)">
-    <!-- Card Frame -->
     <rect class="column-bg" width="212" height="364" rx="10" />
 
-    <!-- Header -->
     <text class="col-title" x="14" y="24">BioChem Reasoning</text>
     <text class="col-subtitle" x="14" y="39">MMLU-Pro • 400 hard questions</text>
     
-    <!-- Dominance Badge -->
     <rect class="badge-win-bg" x="130" y="12" width="68" height="20" rx="10" />
     <text class="badge-win-txt" x="164" y="26" text-anchor="middle">+4.1% CHEM</text>
 
-    <!-- Grid Lines -->
     <line class="grid-line" x1="14" y1="100.0" x2="198" y2="100.0" />
     <line class="grid-line" x1="14" y1="147.5" x2="198" y2="147.5" />
     <line class="grid-line" x1="14" y1="195.0" x2="198" y2="195.0" />
@@ -180,20 +189,22 @@
 
     <!-- Bar 1: Base (76.0% -> h = 144.4, y = 145.6) -->
     <rect x="25" y="145.6" width="38" height="144.4" rx="5" fill="url(#bar-base)" />
-    <text class="val-pct" x="44" y="131.0">76.0%</text>
-    <text class="val-sub" x="44" y="141.5">Overall</text>
+    <rect class="val-pill-base" x="21" y="111" width="46" height="28" rx="5" />
+    <text class="val-pct" x="44" y="124.0">76.0%</text>
+    <text class="val-sub" x="44" y="135.0">Overall</text>
 
     <!-- Bar 2: V2 (76.5% -> h = 145.4, y = 144.6) -->
     <rect x="75" y="144.6" width="38" height="145.4" rx="5" fill="url(#bar-v2)" />
-    <text class="val-pct" x="94" y="130.0">76.5%</text>
-    <text class="val-sub" x="94" y="140.5">Overall</text>
+    <rect class="val-pill-v2" x="71" y="110" width="46" height="28" rx="5" />
+    <text class="val-pct" x="94" y="123.0">76.5%</text>
+    <text class="val-sub" x="94" y="134.0">Overall</text>
 
     <!-- Bar 3: V3 (78.5% -> h = 149.2, y = 140.8) -->
     <rect x="125" y="140.8" width="38" height="149.2" rx="5" fill="url(#bar-v3)" filter="url(#glow-v3)" />
-    <text class="val-pct-v3" x="144" y="125.0">78.5%</text>
-    <text class="val-sub" x="144" y="136.0" fill="#ea580c">Overall</text>
+    <rect class="val-pill-v3" x="121" y="106" width="46" height="28" rx="5" />
+    <text class="val-pct-v3" x="144" y="119.0">78.5%</text>
+    <text class="val-sub-v3" x="144" y="130.0">Overall</text>
 
-    <!-- Card Footer -->
     <rect class="col-footer-box" x="12" y="310" width="188" height="38" rx="7" />
     <text class="col-footer-text" x="106" y="326">Chemistry: 73.5% vs 69.4%</text>
     <text class="col-footer-text" x="106" y="339" font-size="9.5px" fill="#64748b">Biology retained at 86.5%</text>
@@ -201,18 +212,14 @@
 
   <!-- ==================== COLUMN 3: OmniAgent-Bench ==================== -->
   <g transform="translate(492, 110)">
-    <!-- Card Frame -->
     <rect class="column-bg" width="212" height="364" rx="10" />
 
-    <!-- Header -->
     <text class="col-title" x="14" y="24">OmniAgent-Bench</text>
     <text class="col-subtitle" x="14" y="39">16 multi-turn tool schemas</text>
     
-    <!-- Neutral Badge -->
     <rect class="badge-neutral-bg" x="122" y="12" width="76" height="20" rx="10" />
     <text class="badge-neutral-txt" x="160" y="26" text-anchor="middle">13/16 PASSED</text>
 
-    <!-- Grid Lines -->
     <line class="grid-line" x1="14" y1="100.0" x2="198" y2="100.0" />
     <line class="grid-line" x1="14" y1="147.5" x2="198" y2="147.5" />
     <line class="grid-line" x1="14" y1="195.0" x2="198" y2="195.0" />
@@ -221,20 +228,22 @@
 
     <!-- Bar 1: Base (92.7% -> h = 176.1, y = 113.9) -->
     <rect x="25" y="113.9" width="38" height="176.1" rx="5" fill="url(#bar-base)" />
-    <text class="val-pct" x="44" y="99.0">92.7%</text>
-    <text class="val-sub" x="44" y="110.0">15/16</text>
+    <rect class="val-pill-base" x="21" y="80" width="46" height="28" rx="5" />
+    <text class="val-pct" x="44" y="93.0">92.7%</text>
+    <text class="val-sub" x="44" y="104.0">15/16</text>
 
     <!-- Bar 2: V2 (92.7% -> h = 176.1, y = 113.9) -->
     <rect x="75" y="113.9" width="38" height="176.1" rx="5" fill="url(#bar-v2)" />
-    <text class="val-pct" x="94" y="99.0">92.7%</text>
-    <text class="val-sub" x="94" y="110.0">15/16</text>
+    <rect class="val-pill-v2" x="71" y="80" width="46" height="28" rx="5" />
+    <text class="val-pct" x="94" y="93.0">92.7%</text>
+    <text class="val-sub" x="94" y="104.0">15/16</text>
 
     <!-- Bar 3: V3 (84.6% -> h = 160.7, y = 129.3) -->
     <rect x="125" y="129.3" width="38" height="160.7" rx="5" fill="url(#bar-v3)" filter="url(#glow-v3)" />
-    <text class="val-pct-v3" x="144" y="114.0">84.6%</text>
-    <text class="val-sub" x="144" y="125.0" fill="#ea580c">13/16</text>
+    <rect class="val-pill-v3" x="121" y="95" width="46" height="28" rx="5" />
+    <text class="val-pct-v3" x="144" y="108.0">84.6%</text>
+    <text class="val-sub-v3" x="144" y="119.0">13/16</text>
 
-    <!-- Card Footer -->
     <rect class="col-footer-box" x="12" y="310" width="188" height="38" rx="7" />
     <text class="col-footer-text" x="106" y="326">Robust Schema Execution</text>
     <text class="col-footer-text" x="106" y="339" font-size="9.5px" fill="#64748b">Passed 13 of 16 multi-step sets</text>
@@ -242,18 +251,14 @@
 
   <!-- ==================== COLUMN 4: AgentLoop In-Harness ==================== -->
   <g transform="translate(720, 110)">
-    <!-- Card Frame -->
     <rect class="column-bg" width="204" height="364" rx="10" />
 
-    <!-- Header -->
     <text class="col-title" x="14" y="24">AgentLoop In-Harness</text>
     <text class="col-subtitle" x="14" y="39">14 standard training schemas</text>
     
-    <!-- Neutral Badge -->
     <rect class="badge-neutral-bg" x="120" y="12" width="70" height="20" rx="10" />
     <text class="badge-neutral-txt" x="155" y="26" text-anchor="middle">STABLE</text>
 
-    <!-- Grid Lines -->
     <line class="grid-line" x1="14" y1="100.0" x2="190" y2="100.0" />
     <line class="grid-line" x1="14" y1="147.5" x2="190" y2="147.5" />
     <line class="grid-line" x1="14" y1="195.0" x2="190" y2="195.0" />
@@ -262,20 +267,22 @@
 
     <!-- Bar 1: Base (78.6% -> h = 149.3, y = 140.7) -->
     <rect x="22" y="140.7" width="38" height="149.3" rx="5" fill="url(#bar-base)" />
-    <text class="val-pct" x="41" y="126.0">78.6%</text>
-    <text class="val-sub" x="41" y="137.0">11/14</text>
+    <rect class="val-pill-base" x="18" y="106" width="46" height="28" rx="5" />
+    <text class="val-pct" x="41" y="119.0">78.6%</text>
+    <text class="val-sub" x="41" y="130.0">11/14</text>
 
     <!-- Bar 2: V2 (78.6% -> h = 149.3, y = 140.7) -->
     <rect x="72" y="140.7" width="38" height="149.3" rx="5" fill="url(#bar-v2)" />
-    <text class="val-pct" x="91" y="126.0">78.6%</text>
-    <text class="val-sub" x="91" y="137.0">11/14</text>
+    <rect class="val-pill-v2" x="68" y="106" width="46" height="28" rx="5" />
+    <text class="val-pct" x="91" y="119.0">78.6%</text>
+    <text class="val-sub" x="91" y="130.0">11/14</text>
 
     <!-- Bar 3: V3 (71.4% -> h = 135.7, y = 154.3) -->
     <rect x="122" y="154.3" width="38" height="135.7" rx="5" fill="url(#bar-v3)" filter="url(#glow-v3)" />
-    <text class="val-pct-v3" x="141" y="140.0">71.4%</text>
-    <text class="val-sub" x="141" y="150.5" fill="#ea580c">10/14</text>
+    <rect class="val-pill-v3" x="118" y="120" width="46" height="28" rx="5" />
+    <text class="val-pct-v3" x="141" y="133.0">71.4%</text>
+    <text class="val-sub-v3" x="141" y="144.0">10/14</text>
 
-    <!-- Card Footer -->
     <rect class="col-footer-box" x="12" y="310" width="180" height="38" rx="7" />
     <text class="col-footer-text" x="102" y="326">Zero Loop Death</text>
     <text class="col-footer-text" x="102" y="339" font-size="9.5px" fill="#64748b">Base looped up to 18x</text>
