@@ -70,7 +70,7 @@ wait # ensure llama.cpp and cuda extensions build finishes before training
 
 # ---- 2. Build V3 Data Mix (Anti-loop filter, full reasoning restoration)
 stage data && {
-  python $P/build_v3.py --out "$DATA" --total_tokens $(n 35e6 3e5) --max_scan $(n 30000 300) > "$L/v3_data.log" 2>&1 \
+  python $P/build_v3.py --out "$DATA" --total_tokens $(n 35e6 3e5) --max_scan $(n 2500 300) > "$L/v3_data.log" 2>&1 \
     && mark data || fail data "see v3_data.log"
 }
 

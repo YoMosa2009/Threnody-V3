@@ -178,6 +178,8 @@ def main():
                 continue
             rec["source"], rec["n_tok"] = name, n
             recs.append(rec)
+            if len(recs) >= 2000:
+                break
         rng.shuffle(recs)
         pools[name] = recs
         stats[name] = dict(available=len(recs), available_tokens=sum(r["n_tok"] for r in recs), seen=seen, **drop)
