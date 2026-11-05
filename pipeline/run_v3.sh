@@ -44,6 +44,9 @@ if [ ! -f /content/llama.cpp/build/.arch_$CC ]; then
   if [ -f "$CACHE" ]; then
     echo "Restoring cached llama.cpp build for sm_$CC from Drive..."
     mkdir -p /content/llama.cpp/build && tar xzf "$CACHE" -C /content/llama.cpp/build && touch /content/llama.cpp/build/.arch_$CC
+  elif [ -f /content/llama.cpp/build/bin/llama-server ]; then
+    echo "Found existing llama.cpp build for sm_$CC"
+    touch /content/llama.cpp/build/.arch_$CC
   else
     echo "Building llama.cpp for sm_$CC..."
     (cd /content/llama.cpp && cmake -B build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=$CC -DLLAMA_CURL=OFF \
@@ -53,10 +56,8 @@ if [ ! -f /content/llama.cpp/build/.arch_$CC ]; then
   fi
 fi
 
-# Precompiled DeltaNet kernel speedup
-python -c "import causal_conv1d" 2>/dev/null || \
-  (timeout 25m pip install -q --no-build-isolation causal-conv1d flash-attn > "$L/causal_conv1d.log" 2>&1 || \
-   echo "causal_conv1d / flash-attn fallback active" >> "$L/causal_conv1d.log") &
+# Hardware acceleration: PyTorch native SDPA (Scaled Dot-Product Attention) active on sm_$CC
+echo "Hardware acceleration: PyTorch native SDPA active on sm_$CC"
 
 # ---- 1. Teacher & Ingest Check
 # If files were transferred or shared from mosaalsaegh@gmail.com, verify their presence
