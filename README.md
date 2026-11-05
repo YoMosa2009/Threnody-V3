@@ -164,7 +164,7 @@ llama-server -m Threnody-9B-V3-Q4_K_M.gguf --mmproj mmproj-Threnody-9B-V3-F16.gg
 
 ## Repository Structure
 ```
-docs/           bench_v3.svg, KNOWN_DISCREPANCIES.md, HF_MODEL_CARD.md, postmortem, progress log, status
+docs/           05_V4_PLAN.md, bench_v3.svg, KNOWN_DISCREPANCIES.md, HF_MODEL_CARD.md, postmortem, progress log, status
 eval/           AgentLoop harness + 8 tool schemas (6 train, 2 held-out)
 notebooks/      Threnody.ipynb (Colab A100 execution runbook)
 pipeline/       build_v3.py, run_v3.sh, train_sft.py, abliterate.py, gates.py, export_gguf.py, publish_hf.py
