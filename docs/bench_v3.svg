@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-  <title>Threnody 3.0 vs V2 vs Qwen3.5-9B Base benchmark scorecard</title>
+  <title>Threnody 3.0 vs V2 vs Qwen3.5-9B Base: author-reported benchmark scorecard</title>
   <style>
     .bg { fill: #ffffff; }
     .card { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1; }
@@ -25,6 +25,8 @@
     .bwt { fill: #047857; font-size: 10.5px; font-weight: 700; text-anchor: middle; }
     .bn { fill: #f1f5f9; stroke: #e2e8f0; }
     .bnt { fill: #475569; font-size: 10.5px; font-weight: 600; text-anchor: middle; }
+    .bx { fill: #fff1f2; stroke: #fecdd3; }
+    .bxt { fill: #be123c; font-size: 10.5px; font-weight: 700; text-anchor: middle; }
     .meta { fill: #64748b; font-size: 11.5px; }
     @media (prefers-color-scheme: dark) {
       .bg { fill: #0b0f17; }
@@ -46,13 +48,15 @@
       .bwt { fill: #34d399; }
       .bn { fill: #1e293b; stroke: #334155; }
       .bnt { fill: #94a3b8; }
+      .bx { fill: #4c0519; stroke: #9f1239; }
+      .bxt { fill: #fda4af; }
     }
   </style>
   <rect class="bg" width="960" height="600" rx="14"/>
   <rect class="card" x="14.5" y="14.5" width="931" height="571" rx="12"/>
-  <text class="eyebrow" x="40" y="46">AXIOM INFERENCE · FRONTIER BENCHMARK</text>
+  <text class="eyebrow" x="40" y="46">AXIOM INFERENCE · AUTHOR-REPORTED BENCHMARKS</text>
   <text class="title" x="40" y="74">Threnody 3.0 Performance Scorecard</text>
-  <text class="subtitle" x="40" y="96">Full adapter strength (s0.75) leads on held-out coding and domain reasoning with zero action looping</text>
+  <text class="subtitle" x="40" y="96">Q8_0, non-thinking, temperature 0, single run. Badges: V3 minus Base, in percentage points.</text>
   <g>
     <rect class="base" x="40" y="113" width="12" height="12" rx="3"/>
     <text class="legend" x="58" y="123">Qwen3.5-9B Base</text>
@@ -73,11 +77,11 @@
   <text class="axis" x="770.0" y="138">100%</text>
   <g>
     <text class="rt" x="40" y="164">Held-Out Coding</text>
-    <text class="rs" x="40" y="181">opencode · 14 unseen tasks</text>
-    <text class="n1" x="40" y="204">Zero action loops (rep=1)</text>
-    <text class="n2" x="40" y="220">12 of 13 passed in 1 attempt</text>
-    <rect class="bw" x="178" y="150" width="118" height="20" rx="10"/>
-    <text class="bwt" x="237.0" y="164">+7.2 pts vs Base</text>
+    <text class="rs" x="40" y="181">opencode · 14 tasks · used in selection</text>
+    <text class="n1" x="40" y="204">max_repeat = 1 on this suite</text>
+    <text class="n2" x="40" y="220">One task more than Base</text>
+    <rect class="bw" x="234" y="150" width="62" height="20" rx="10"/>
+    <text class="bwt" x="265.0" y="164">+7.1 pp</text>
     <rect class="base" x="320" y="152" width="385.6" height="18" rx="4"/>
     <text x="713.6" y="165"><tspan class="val">85.7%</tspan><tspan class="sub" dx="6">12/14</tspan></text>
     <rect class="v2" x="320" y="177" width="321.3" height="18" rx="4"/>
@@ -87,12 +91,12 @@
   </g>
   <line class="sep" x1="40" y1="232" x2="920" y2="232"/>
   <g>
-    <text class="rt" x="40" y="256">BioChem Reasoning</text>
-    <text class="rs" x="40" y="273">MMLU-Pro · 400 hard questions</text>
-    <text class="n1" x="40" y="296">Chemistry: 73.5% vs 69.4%</text>
-    <text class="n2" x="40" y="312">Biology retained at 86.5%</text>
-    <rect class="bw" x="197" y="242" width="99" height="20" rx="10"/>
-    <text class="bwt" x="246.5" y="256">+4.1 pts Chem</text>
+    <text class="rt" x="40" y="256">Bio/Chem Subset</text>
+    <text class="rs" x="40" y="273">MMLU-Pro bio+chem · 400-question sample</text>
+    <text class="n1" x="40" y="296">Chemistry 73.5% vs 69.4% (+4.1 pp)</text>
+    <text class="n2" x="40" y="312">Biology 86.5% (no change)</text>
+    <rect class="bw" x="234" y="242" width="62" height="20" rx="10"/>
+    <text class="bwt" x="265.0" y="256">+2.5 pp</text>
     <rect class="base" x="320" y="244" width="342.0" height="18" rx="4"/>
     <text x="670.0" y="257"><tspan class="val">76.0%</tspan><tspan class="sub" dx="6">overall</tspan></text>
     <rect class="v2" x="320" y="269" width="344.2" height="18" rx="4"/>
@@ -103,11 +107,11 @@
   <line class="sep" x1="40" y1="324" x2="920" y2="324"/>
   <g>
     <text class="rt" x="40" y="348">OmniAgent-Bench</text>
-    <text class="rs" x="40" y="365">16 multi-turn tool schemas</text>
-    <text class="n1" x="40" y="388">Robust schema execution</text>
-    <text class="n2" x="40" y="404">Passed 13 of 16 multi-step sets</text>
-    <rect class="bn" x="203" y="334" width="93" height="20" rx="10"/>
-    <text class="bnt" x="249.5" y="348">13/16 passed</text>
+    <text class="rs" x="40" y="365">16 multi-turn tool tasks · weighted</text>
+    <text class="n1" x="40" y="388">13/16 passed (Base 15/16)</text>
+    <text class="n2" x="40" y="404">Regression vs Base and V2</text>
+    <rect class="bx" x="234" y="334" width="62" height="20" rx="10"/>
+    <text class="bxt" x="265.0" y="348">−8.1 pp</text>
     <rect class="base" x="320" y="336" width="417.1" height="18" rx="4"/>
     <text x="745.1" y="349"><tspan class="val">92.7%</tspan><tspan class="sub" dx="6">15/16</tspan></text>
     <rect class="v2" x="320" y="361" width="417.1" height="18" rx="4"/>
@@ -118,11 +122,11 @@
   <line class="sep" x1="40" y1="416" x2="920" y2="416"/>
   <g>
     <text class="rt" x="40" y="440">AgentLoop In-Harness</text>
-    <text class="rs" x="40" y="457">14 standard training schemas</text>
-    <text class="n1" x="40" y="480">Zero loop death</text>
-    <text class="n2" x="40" y="496">Base looped up to 18×</text>
-    <rect class="bn" x="241" y="426" width="55" height="20" rx="10"/>
-    <text class="bnt" x="268.5" y="440">Stable</text>
+    <text class="rs" x="40" y="457">14 tasks · training schemas</text>
+    <text class="n1" x="40" y="480">max_repeat = 1 (GitHub record)</text>
+    <text class="n2" x="40" y="496">HF card lists 27 · unresolved</text>
+    <rect class="bx" x="234" y="426" width="62" height="20" rx="10"/>
+    <text class="bxt" x="265.0" y="440">−7.1 pp</text>
     <rect class="base" x="320" y="428" width="353.7" height="18" rx="4"/>
     <text x="681.7" y="441"><tspan class="val">78.6%</tspan><tspan class="sub" dx="6">11/14</tspan></text>
     <rect class="v2" x="320" y="453" width="353.7" height="18" rx="4"/>
@@ -131,7 +135,6 @@
     <text x="649.3" y="491"><tspan class="val3">71.4%</tspan><tspan class="sub" dx="6">10/14</tspan></text>
   </g>
   <line class="sep" x1="40" y1="542" x2="920" y2="542"/>
-  <text class="meta" x="40" y="562">✓ Zero repetition loops on passes (rep=1)</text>
-  <text class="meta" x="480" y="562" text-anchor="middle">✓ Arditi et al. layers 12–28 refusal orthogonalization</text>
-  <text class="meta" x="920" y="562" text-anchor="end">✓ Decoupled FP16 vision projector (mmproj)</text>
+  <text class="meta" x="40" y="562">AgentLoop-Hard (not shown): 17/30 vs Base 19/30, max_repeat 2</text>
+  <text class="meta" x="920" y="562" text-anchor="end">Scores: results/v3_final.json · Caveats: docs/KNOWN_DISCREPANCIES.md</text>
 </svg>

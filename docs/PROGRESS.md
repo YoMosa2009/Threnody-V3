@@ -119,6 +119,8 @@
 - Updated `notebooks/Threnody.ipynb` and `notebooks/make_notebook.py` for automated fresh-drive fallback and 7-cell runbook.
 - Verified all acceptance gates pass at s1.0: OmniAgent >= 93.8%, AgentLoop In-Harness 13/14, AgentLoop Held-Out 11/14, BioChem-Hard 41.5%.
 
+> **Correction note (2026-11-05):** This line matches the superseded `s1.0` result set in commit `52edc9f`. It conflicts with `results/v3_gate_s1.0.json` (`s1.0` failed) and with the later release of `s0.75`. Unresolved; see [`KNOWN_DISCREPANCIES.md` §4.1](KNOWN_DISCREPANCIES.md#41-an-earlier-superseded-v3-result-set). The entry is kept as originally written.
+
 
 ### 2026-11-04 to 2026-11-05 UTC — V3 Training, Selection, Abliteration & Release (A100-80GB)
 - **Compute Runtime**: Connected to Google Colab **NVIDIA A100-SXM4-80GB High-RAM** instance under Google AI Pro Plan.
@@ -162,6 +164,14 @@
     - `Threnody-9B-V3-IQ3_M.gguf` (4.20 GB) — 89.6% top-p retention
     - `mmproj-Threnody-9B-V3-F16.gguf` (0.92 GB) — Decoupled FP16 Multimodal Vision Projector
   - Generated `quant_report.json` (`v3_export.done`).
+
+> **Correction note (2026-11-05)** on the Stage 3–6 entries above (kept as originally written):
+> - Score differences should be read in percentage points. `opencode` is +7.1 pp vs. Base (13/14 vs. 12/14), and that suite was also used in selection. Calling it "crushing" Base overstates a one-task difference.
+> - "Completely curing V2's catastrophic forgetting (+59.4% over V2 in chemistry)" compares V3's MMLU-Pro chemistry subset with V2's BioChem-Hard chemistry subset, which are different tests ([§7](KNOWN_DISCREPANCIES.md#7-science-score-records)).
+> - "`max_repeat = 1` across 12 of 13 passed tasks" conflicts with the suite-level `max_repeat = 1` in `v3_final.json`. No per-task data is published ([§5](KNOWN_DISCREPANCIES.md#5-anti-loop-claims)).
+> - The SFT used LoRA, and the 56 steps / 1.219 epochs cannot be reconciled with either the reported or the coded batch settings ([§3.3](KNOWN_DISCREPANCIES.md#33-hyperparameters-report-vs-trainer-code-vs-launch-script)).
+> - "Top-p retention" is the share of positions where the quant's top token matches BF16 on `val.jsonl`. It is not a task-performance measure ([§8](KNOWN_DISCREPANCIES.md#8-quantization-claims)).
+> - The `s0.75` gate records do not match the gate code ([§4](KNOWN_DISCREPANCIES.md#4-gate-records-vs-gate-code)).
 - **Stage 7 (Hugging Face Hub Release)**:
   - Authenticated via write token and streamed all 7 binaries + model cards to [`MalxTech/Threnody-9B-V3-GGUF`](https://huggingface.co/MalxTech/Threnody-9B-V3-GGUF) (`v3_upload.done`).
 - **Post-Release Teardown**:
