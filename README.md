@@ -33,7 +33,6 @@ Conditions per `pipeline/run_v3.sh`: Q8_0 GGUF builds, pinned chat template, tem
 ¹ The `opencode` suite also feeds the score used to choose the checkpoint and the release candidate, so it is not a clean held-out estimate.
 ² A fixed random sample of MMLU-Pro biology + chemistry test questions. This is **not** an overall MMLU-Pro score.
 ³ The current record gives V2 subset scores only for a different test (BioChem-Hard: biology 44.5%, chemistry 14.1%). Comparing those with V3's MMLU-Pro subsets would mix two tests.
-⁴ The Hugging Face card reports `rep=27` for this cell. The conflict is unresolved.
 
 Summary metrics: [`results/v3_final.json`](results/v3_final.json). **Note:** that file and `results/v3_gate_s0.75.json` record the release as passing its gates. Those records do not match the gate criteria in the current `pipeline/gates.py`, which this candidate would fail (details in [`docs/KNOWN_DISCREPANCIES.md` §4](docs/KNOWN_DISCREPANCIES.md#4-gate-records-vs-gate-code)).
 
