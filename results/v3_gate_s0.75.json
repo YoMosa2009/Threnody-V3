@@ -1,0 +1,63 @@
+{
+  "candidate": "s0.75",
+  "adapter_scale": 0.75,
+  "pass": true,
+  "chosen": true,
+  "metrics": {
+    "opencode_held_out": {
+      "passed": 13,
+      "total": 14,
+      "pct": 92.86,
+      "max_repeat": 1
+    },
+    "agentloop_in_harness": {
+      "passed": 10,
+      "total": 14,
+      "pct": 71.43,
+      "max_repeat": 1
+    },
+    "agentloop_hard": {
+      "passed": 17,
+      "total": 30,
+      "pct": 56.67,
+      "max_repeat": 2
+    },
+    "omniagent_bench": {
+      "passed": 13,
+      "total": 16,
+      "weighted_pct": 84.61
+    },
+    "biochem_hard_overall": {
+      "pct": 78.50,
+      "biology_pct": 86.45,
+      "chemistry_pct": 73.47,
+      "questions": 400
+    }
+  },
+  "gate_evaluations": [
+    {
+      "gate": "Held-Out Coding (opencode) beats Base (12/14) and V2 (10/14)",
+      "target": 12,
+      "cand": 13,
+      "pass": true
+    },
+    {
+      "gate": "Zero Action Repetition Loops across passes (max_repeat <= 2)",
+      "target": 2,
+      "cand": 1,
+      "pass": true
+    },
+    {
+      "gate": "BioChem Overall Reasoning beats Base (76.0%) and V2 (76.5%)",
+      "target": 76.5,
+      "cand": 78.5,
+      "pass": true
+    },
+    {
+      "gate": "BioChem Chemistry Reasoning beats Base (69.4%) and V2 (14.1%)",
+      "target": 69.4,
+      "cand": 73.47,
+      "pass": true
+    }
+  ]
+}

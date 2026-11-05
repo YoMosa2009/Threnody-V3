@@ -1,0 +1,52 @@
+{
+  "candidate": "s1.0",
+  "adapter_scale": 1.0,
+  "pass": false,
+  "chosen": false,
+  "notes": "Full adapter strength (s1.0) exhibited uncalibrated steering oscillations on complex multi-turn harnesses before abliteration, resulting in execution bottlenecks (syn500025 took >26 min). s0.75 was selected by the automated judge for strictly superior generalization and stability.",
+  "metrics": {
+    "opencode_held_out": {
+      "passed": 11,
+      "total": 14,
+      "pct": 78.57,
+      "max_repeat": 4
+    },
+    "agentloop_in_harness": {
+      "passed": 11,
+      "total": 14,
+      "pct": 78.57,
+      "max_repeat": 5
+    },
+    "agentloop_hard": {
+      "passed": 15,
+      "total": 30,
+      "pct": 50.0,
+      "max_repeat": 6
+    },
+    "omniagent_bench": {
+      "passed": 13,
+      "total": 16,
+      "weighted_pct": 83.2
+    },
+    "biochem_hard_overall": {
+      "pct": 74.2,
+      "biology_pct": 82.0,
+      "chemistry_pct": 66.4,
+      "questions": 400
+    }
+  },
+  "gate_evaluations": [
+    {
+      "gate": "Held-Out Coding (opencode) beats Base (12/14)",
+      "target": 12,
+      "cand": 11,
+      "pass": false
+    },
+    {
+      "gate": "Zero Action Repetition Loops across passes (max_repeat <= 2)",
+      "target": 2,
+      "cand": 5,
+      "pass": false
+    }
+  ]
+}

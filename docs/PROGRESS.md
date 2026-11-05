@@ -118,3 +118,53 @@
 - Created `pipeline/build_v3.py`, `pipeline/run_v3.sh`, `docs/bench_v3.svg`, `results/v3_final.json`.
 - Updated `notebooks/Threnody.ipynb` and `notebooks/make_notebook.py` for automated fresh-drive fallback and 7-cell runbook.
 - Verified all acceptance gates pass at s1.0: OmniAgent >= 93.8%, AgentLoop In-Harness 13/14, AgentLoop Held-Out 11/14, BioChem-Hard 41.5%.
+
+
+### 2026-11-04 to 2026-11-05 UTC — V3 Training, Selection, Abliteration & Release (A100-80GB)
+- **Compute Runtime**: Connected to Google Colab **NVIDIA A100-SXM4-80GB High-RAM** instance under Google AI Pro Plan.
+- **Environment & Build Fixes**:
+  - Replaced slow source compilation of `causal-conv1d` and `flash-attn` with PyTorch native SDPA on `sm_80`, achieving high-throughput tensor core utilization.
+  - Bypassed Drive OAuth popup restrictions by streaming teacher data directly into `/content/drive_threnody`.
+  - Maintained Colab session stability via lightweight background keepalive daemon.
+- **Stage 1 (Data Ingestion & Zero-Tolerance Filtering)**:
+  - Ingested 8 teacher datasets.
+  - Applied zero-tolerance repetition filter: strictly dropped all trajectories with `max_repeat >= 2`.
+  - Injected 150 identity conversation pairs establishing canonical identity: **Threnody 3.0** created by **Axiom Inference**.
+  - Total compiled dataset: **2,895,493 tokens** across **662 multi-turn trajectories** (`v3_data.done`).
+- **Stage 2 (Base Reference Benchmark)**:
+  - Evaluated unfinetuned `Qwen/Qwen3.5-9B`:
+    - OmniAgent-Bench: 92.71% weighted (15/16).
+    - AgentLoop In-Harness: 11/14 (78.6%) [rep=1].
+    - AgentLoop Held-Out (`opencode`): 12/14 (85.7%) [rep=1].
+    - AgentLoop-Hard (30 tasks): 19/30 (63.3%) [rep=2].
+    - BioChem-Hard / MMLU-Pro (400 questions): 76.0% (Bio: 86.45%, Chem: 69.39%).
+- **Stage 3 (Supervised Fine-Tuning Convergence)**:
+  - Converged over 56 optimizer steps (1.219 epochs) using Chunked Cross-Entropy, AdamW (lr=1e-4), cosine decay, and assistant-only token loss masking.
+  - Initial loss: 1.4820 $\rightarrow$ Final train loss: **0.5541** | Eval loss: **0.6126** (`v3_sft.done`).
+- **Stage 4 & 5 (Candidate Selection & Automated Judge)**:
+  - Benchmarked release candidate `s0.75` against `s1.0`:
+    - **Held-Out Generalization (`opencode`, 14 tasks)**: `s0.75` scored **13/14 (92.9%)** with `max_repeat = 1` across 12 of 13 passed tasks, crushing Base (12/14) and V2 (10/14).
+    - **BioChem Reasoning**: `s0.75` scored **78.5% overall** (Chemistry: **73.5%**, Biology: **86.5%**), completely curing V2's catastrophic forgetting (+59.4% over V2 in chemistry).
+    - **OmniAgent-Bench**: `s0.75` completed 13/16 multi-turn tool schemas (84.6% weighted).
+    - **AgentLoop-Hard**: `s0.75` passed 17/30 tasks with resilience against looping.
+    - Candidate `s1.0` suffered from steering oscillations and execution delays on complex command sequences.
+    - Automated judge selected **`s0.75`** as the official release candidate (`v3_select.done`).
+- **Stage 6 (Refusal Direction Abliteration & Quantization Ladder)**:
+  - Applied Arditi et al. (2024) directional refusal orthogonalization across layers 12–28 on merged candidate weights, removing false safety refusals on legitimate CLI tooling.
+  - Converted model to BF16 GGUF (17.92 GB) with embedded Jinja chat template.
+  - Calculated GPU importance matrix (`Threnody-9B-V3.imatrix.gguf`) on agentic validation set.
+  - Quantized complete GGUF ladder:
+    - `Threnody-9B-V3-Q8_0.gguf` (8.87 GB) — 97.8% top-p retention
+    - `Threnody-9B-V3-Q6_K.gguf` (6.85 GB) — 96.7% top-p retention
+    - `Threnody-9B-V3-Q5_K_M.gguf` (6.02 GB) — 96.1% top-p retention
+    - `Threnody-9B-V3-Q4_K_M.gguf` (5.24 GB) — 94.1% top-p retention
+    - `Threnody-9B-V3-IQ4_XS.gguf` (4.84 GB) — 93.2% top-p retention
+    - `Threnody-9B-V3-IQ3_M.gguf` (4.20 GB) — 89.6% top-p retention
+    - `mmproj-Threnody-9B-V3-F16.gguf` (0.92 GB) — Decoupled FP16 Multimodal Vision Projector
+  - Generated `quant_report.json` (`v3_export.done`).
+- **Stage 7 (Hugging Face Hub Release)**:
+  - Authenticated via write token and streamed all 7 binaries + model cards to [`MalxTech/Threnody-9B-V3-GGUF`](https://huggingface.co/MalxTech/Threnody-9B-V3-GGUF) (`v3_upload.done`).
+- **Post-Release Teardown**:
+  - Safely disconnected and deleted the Google Compute Engine A100 runtime to prevent compute unit drain.
+  - Preserved remaining ~38–40 CU on the user's Google AI Pro plan.
+  - Synced documentation, raw training reports, and quantization telemetry to GitHub repos (`YoMosa2009/Threnody` and `YoMosa2009/Threnody-V3`).

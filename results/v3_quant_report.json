@@ -1,0 +1,122 @@
+{
+  "model": "Threnody 3.0 (Threnody-9B V3)",
+  "creator": "Axiom Inference",
+  "base": "Qwen/Qwen3.5-9B",
+  "calib_dataset": "agentic multi-turn validation set (val.jsonl)",
+  "quants": {
+    "Q8_0": {
+      "bytes": 9527502016,
+      "size_gb": 8.87,
+      "top_p_same_choice": 97.756,
+      "top_p_std": 0.087,
+      "mean_delta_p": 0.009,
+      "median_kld": 0.000088,
+      "kld_lines": [
+        "Median  KLD:   0.000088",
+        "10.0%   KLD:   0.000000",
+        " 5.0%   KLD:  -0.000000",
+        " 1.0%   KLD:  -0.000001",
+        " 0.1%   KLD:  -0.000007",
+        "Minimum KLD:  -0.000047",
+        "Mean    \u0394p:  0.009 \u00b1 0.027 %",
+        "Same top p: 97.756 \u00b1 0.087 %"
+      ]
+    },
+    "Q6_K": {
+      "bytes": 7359259840,
+      "size_gb": 6.85,
+      "top_p_same_choice": 96.664,
+      "top_p_std": 0.106,
+      "mean_delta_p": 0.160,
+      "median_kld": 0.000246,
+      "kld_lines": [
+        "Median  KLD:   0.000246",
+        "10.0%   KLD:   0.000001",
+        " 5.0%   KLD:   0.000000",
+        " 1.0%   KLD:  -0.000001",
+        " 0.1%   KLD:  -0.000005",
+        "Minimum KLD:  -0.000026",
+        "Mean    \u0394p:  0.160 \u00b1 0.036 %",
+        "Same top p: 96.664 \u00b1 0.106 %"
+      ]
+    },
+    "Q5_K_M": {
+      "bytes": 6467970240,
+      "size_gb": 6.02,
+      "top_p_same_choice": 96.127,
+      "top_p_std": 0.114,
+      "mean_delta_p": 0.021,
+      "median_kld": 0.000426,
+      "kld_lines": [
+        "Median  KLD:   0.000426",
+        "10.0%   KLD:   0.000002",
+        " 5.0%   KLD:   0.000000",
+        " 1.0%   KLD:  -0.000001",
+        " 0.1%   KLD:  -0.000003",
+        "Minimum KLD:  -0.000055",
+        "Mean    \u0394p:  0.021 \u00b1 0.039 %",
+        "Same top p: 96.127 \u00b1 0.114 %"
+      ]
+    },
+    "Q4_K_M": {
+      "bytes": 5629109440,
+      "size_gb": 5.24,
+      "top_p_same_choice": 94.058,
+      "top_p_std": 0.140,
+      "mean_delta_p": 0.503,
+      "median_kld": 0.001219,
+      "kld_lines": [
+        "Median  KLD:   0.001219",
+        "10.0%   KLD:   0.000005",
+        " 5.0%   KLD:   0.000002",
+        " 1.0%   KLD:  -0.000000",
+        " 0.1%   KLD:  -0.000002",
+        "Minimum KLD:  -0.000005",
+        "Mean    \u0394p:  0.503 \u00b1 0.057 %",
+        "Same top p: 94.058 \u00b1 0.140 %"
+      ]
+    },
+    "IQ4_XS": {
+      "bytes": 5196440768,
+      "size_gb": 4.84,
+      "top_p_same_choice": 93.161,
+      "top_p_std": 0.149,
+      "mean_delta_p": -0.148,
+      "median_kld": 0.001749,
+      "kld_lines": [
+        "Median  KLD:   0.001749",
+        "10.0%   KLD:   0.000008",
+        " 5.0%   KLD:   0.000003",
+        " 1.0%   KLD:   0.000000",
+        " 0.1%   KLD:  -0.000002",
+        "Minimum KLD:  -0.000025",
+        "Mean    \u0394p: -0.148 \u00b1 0.059 %",
+        "Same top p: 93.161 \u00b1 0.149 %"
+      ]
+    },
+    "IQ3_M": {
+      "bytes": 4415382720,
+      "size_gb": 4.20,
+      "top_p_same_choice": 89.615,
+      "top_p_std": 0.180,
+      "mean_delta_p": -1.787,
+      "median_kld": 0.007465,
+      "kld_lines": [
+        "Median  KLD:   0.007465",
+        "10.0%   KLD:   0.000042",
+        " 5.0%   KLD:   0.000016",
+        " 1.0%   KLD:   0.000003",
+        " 0.1%   KLD:   0.000000",
+        "Minimum KLD:  -0.000003",
+        "Mean    \u0394p: -1.787 \u00b1 0.087 %",
+        "Same top p: 89.615 \u00b1 0.180 %"
+      ]
+    },
+    "mmproj_F16": {
+      "filename": "mmproj-Threnody-9B-V3-F16.gguf",
+      "bytes": 986687488,
+      "size_gb": 0.92,
+      "type": "Decoupled Vision Projector (F16)"
+    }
+  }
+}

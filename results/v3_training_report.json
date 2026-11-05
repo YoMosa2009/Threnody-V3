@@ -1,0 +1,109 @@
+{
+  "experiment": "Threnody 3.0 (V3) Full SFT and Calibration",
+  "model_name": "Threnody 3.0",
+  "creator": "Axiom Inference",
+  "base_model": "Qwen/Qwen3.5-9B",
+  "license": "Apache-2.0",
+  "timestamp_utc": "2026-11-05T05:50:23Z",
+  "hardware": {
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "compute_capability": "sm_80",
+    "total_vram_gb": 80.0,
+    "vram_utilized_gb": 41.2,
+    "host_ram_gb": 167.05,
+    "system_optimizations": [
+      "Chunked Cross-Entropy",
+      "Native SDPA on sm_80",
+      "Assistant-only token loss masking",
+      "Direct Gated-DeltaNet hybrid layer support"
+    ]
+  },
+  "hyperparameters": {
+    "learning_rate": 0.0001,
+    "optimizer": "adamw_torch",
+    "lr_scheduler": "cosine",
+    "warmup_steps": 5,
+    "weight_decay": 0.01,
+    "per_device_train_batch_size": 4,
+    "gradient_accumulation_steps": 8,
+    "effective_batch_size": 32,
+    "max_seq_length": 32768,
+    "epochs": 1.219,
+    "total_optimizer_steps": 56,
+    "gradient_checkpointing": true,
+    "bf16": true
+  },
+  "dataset_breakdown": {
+    "total_tokens": 2895493,
+    "total_trajectories": 662,
+    "sources": [
+      {
+        "name": "nvidia/Open-SWE-Traces",
+        "description": "Multi-turn software engineering traces with real tool schemas (Qwen3.8-27B verified)",
+        "share_pct": 35.0
+      },
+      {
+        "name": "code_verified",
+        "description": "Algorithmic coding problems with hidden pytest verification",
+        "share_pct": 20.0
+      },
+      {
+        "name": "swe_traces",
+        "description": "Real terminal bug fixes and regression patch trajectories",
+        "share_pct": 20.0
+      },
+      {
+        "name": "sci_v2 (BioChem)",
+        "description": "MMLU-Pro / BioChem multi-step reasoning traces",
+        "share_pct": 15.0
+      },
+      {
+        "name": "regen & identity",
+        "description": "Tool schema validation, cybersecurity scripts, and 150 Axiom Inference identity pairs",
+        "share_pct": 10.0
+      }
+    ],
+    "filters_applied": {
+      "anti_loop_filter": "Strict drop if max_repeat >= 2. Zero-repeat trajectories sorted first.",
+      "decontamination": "13-gram literal & entry-point exclusion vs OmniAgent-Bench & AgentLoop",
+      "think_scratchpad_preservation": "Extracted both reasoning_content and reasoning (~75% with intact <think> blocks)"
+    }
+  },
+  "training_metrics": {
+    "initial_loss": 1.4820,
+    "step_10_loss": 0.9842,
+    "step_20_loss": 0.7915,
+    "step_30_loss": 0.6841,
+    "step_40_loss": 0.6120,
+    "step_50_loss": 0.5732,
+    "final_train_loss": 0.5541,
+    "final_eval_loss": 0.6126
+  },
+  "ablation_selection": {
+    "candidates_evaluated": [
+      {
+        "name": "s0.75",
+        "adapter_scale": 0.75,
+        "held_out_opencode": "13/14 (92.9%)",
+        "held_out_rep": 1,
+        "biochem_hard_overall": "78.5%",
+        "omniagent_weighted": "84.6%",
+        "status": "CHOSEN_RELEASE"
+      },
+      {
+        "name": "s1.0",
+        "adapter_scale": 1.0,
+        "held_out_opencode": "Slow execution / uncalibrated steering oscillations (task took >26m)",
+        "held_out_rep": "Acute looping without refusal abliteration",
+        "biochem_hard_overall": "74.2%",
+        "status": "REJECTED"
+      }
+    ]
+  },
+  "refusal_abliteration": {
+    "technique": "Arditi et al. (2024) directional weight orthogonalization",
+    "layers_modified": "12 through 28 inclusive",
+    "refusal_direction_computed_on": "Harmless cybersecurity, command execution, and dual-use code vs harmful malicious vectors",
+    "outcome": "Preserved coding capability while removing false refusals on legitimate CLI tooling"
+  }
+}
